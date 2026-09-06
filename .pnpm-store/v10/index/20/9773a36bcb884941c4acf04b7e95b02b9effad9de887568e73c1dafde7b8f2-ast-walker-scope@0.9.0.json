@@ -1,0 +1,37 @@
+{
+  "name": "ast-walker-scope",
+  "version": "0.9.0",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700695679,
+      "integrity": "sha512-qBNEQeLiGNuYhE/mky5aR98O2aqVzje9COmnBYz2W3rrrhtKMBS5jRIkTSPjDBNvHjtiE1pI8sttzICJ1OqcbQ==",
+      "mode": 420,
+      "size": 1110
+    },
+    "package.json": {
+      "checkedAt": 1788700695680,
+      "integrity": "sha512-008SsK60GMqn55sBaOxoRieE/gnoTaWgklNL7KLen5DLX8fFNAj7JpCM8uS93sqXEpjYbFpp+HMoGvJIlCMYUA==",
+      "mode": 420,
+      "size": 1496
+    },
+    "README.md": {
+      "checkedAt": 1788700695681,
+      "integrity": "sha512-HyrA1f9ZLfyRizhK9jGz2o8f3iMTcOhp0haNLuBAnbNJu1/b0h3Ql4fVoELtc9ktflf4zPsoVOcl3M8wWKluQw==",
+      "mode": 420,
+      "size": 2687
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700695681,
+      "integrity": "sha512-hiN8HKeofx6Oa90lE7jMR4Pqw8z+h9F3UtxXNWx1ApAKKexSxok1zzfuwQNF2V8+ATGwxgW963LMSzkc8c+xlw==",
+      "mode": 420,
+      "size": 5470
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700695682,
+      "integrity": "sha512-GEnXeAWjOzr5ob+BkM5AIEDQ3nmcGJkOB9TOvs3n9RUrQAmPFpIVkoQKlJnttIKCv+yxjWgUkdqaov7BZvrBHw==",
+      "mode": 420,
+      "size": 2017
+    }
+  }
+}

@@ -1,0 +1,113 @@
+import { DevframeHubUi, DockRendererRegistration, InitHubOptions } from "@devframes/hub/initiate";
+import { DevframeHubContext } from "@devframes/hub/node";
+import { ClientScriptEntry } from "@devframes/hub/types";
+import { Plugin } from "vite";
+//#region src/hub.d.ts
+interface ViteDevframeHubOptions {
+  /**
+   * Mount base the hub answers under; every frame lives at `<base><id>/`.
+   * Default: `/__devframes/`.
+   */
+  base?: string;
+  /**
+   * Pin a side-car port for the RPC/WS server. By default the WebSocket
+   * shares Vite's own HTTP server, upgrading at `<base>__ws`.
+   */
+  port?: number;
+  /** Bind host for a pinned side-car server. Default: `localhost`. */
+  host?: string;
+  /**
+   * Devframes to mount as docks. Wrap an entry in `{ devframe, dock }` to
+   * customize its synthesized iframe dock (category, `frameId`, `subTabs`, …).
+   */
+  devframes?: InitHubOptions['devframes'];
+  /**
+   * Per-dock client scripts, keyed by devframe id. Attached to the mounted
+   * iframe dock so the hub client runtime imports them into the host page
+   * (e.g. the a11y inspector's in-page agent).
+   */
+  clientScripts?: Record<string, ClientScriptEntry>;
+  /**
+   * Prebuilt dock-renderer modules forwarded to `initHub({ renderers })`,
+   * each served at `<base>__renderers/<type>.mjs` and published in the
+   * renderer manifest (e.g. `jsonRenderUiRenderer()` from
+   * `@devframes/json-render-ui/hub`).
+   */
+  renderers?: readonly DockRendererRegistration[];
+  /**
+   * Extra RPC declarations registered at context creation, alongside the hub
+   * built-ins.
+   */
+  rpcDeclarations?: InitHubOptions['rpcDeclarations'];
+  /**
+   * Runs once the context exists and every `devframes` entry is mounted;
+   * register docks, commands, terminals, and messages surfaces here.
+   */
+  configure?: (ctx: DevframeHubContext) => void | Promise<void>;
+  /**
+   * The hub's UI slot. Defaults to `@devframes/hub-ui`'s `createUi()` (the
+   * reference floating dock + standalone viewer) when omitted, so install
+   * `@devframes/hub-ui` for that default. Pass your own {@link DevframeHubUi}
+   * to swap the hub UI provider, or `false` for a headless hub (serve your own UI
+   * against `@devframes/hub/client`).
+   */
+  ui?: DevframeHubUi | false;
+  /**
+   * The hub's single auth gate. Gates by default (interactive OTP); `false`
+   * opts out for a single-user localhost host.
+   */
+  auth?: InitHubOptions['auth'];
+  /**
+   * Expose the aggregate MCP endpoint at `<base>__mcp`. Defaults to `'auto'`
+   * (mount once any mounted devframe exposes an agent surface); `true`
+   * forces it on, `false` off.
+   */
+  mcp?: InitHubOptions['mcp'];
+  /** Publish this hub in the global instance registry. Default: off. */
+  register?: InitHubOptions['register'];
+  /** Public origin the host app is reachable at, or a getter. */
+  origin?: InitHubOptions['origin'];
+  /** Working directory for the hub context. Default: Vite's project root. */
+  cwd?: string;
+  /** Override where persisted devframe state lives. */
+  getStorageDir?: InitHubOptions['getStorageDir'];
+  /** Name for the hub instance (logs, diagnostics, MCP server). */
+  name?: string;
+  /** Version for the hub instance (logs, diagnostics, MCP server). */
+  version?: string;
+  /**
+   * Silence the notice recommending Vite DevTools. See {@link viteDevframeHub}.
+   *
+   * @default false
+   */
+  quiet?: boolean;
+  /**
+   * Also bake the hub into `vite build` output: `buildHub` writes the whole
+   * static hub subtree (each devframe's SPA, the RPC dump, `embedded.js`, …)
+   * into `<outDir><base>`, and the UI's `embedded.js` script tag is injected
+   * into the built HTML, so the deployed app ships working devtools against
+   * a `static` backend (baked reads, no live server). Off by default: a
+   * production bundle only carries devtools when the host opts in.
+   *
+   * @default false
+   */
+  build?: boolean;
+}
+/**
+ * Mount a whole **devframes-hub** (many integrations under one namespace,
+ * one merged RPC registry, one WebSocket) inside an existing Vite dev
+ * server. One `initHub()` call, mounted as connect middleware; the WebSocket
+ * shares Vite's own HTTP server (upgrading at `<base>__ws`) unless a `port`
+ * pins a side-car. The UI defaults to `@devframes/hub-ui` (its `embedded.js`
+ * bootstrap is injected into the host page automatically); pass `ui` to swap
+ * it or `ui: false` for a headless hub you drive with `@devframes/hub/client`.
+ *
+ * This mounts one integration-agnostic hub. Vite DevTools
+ * (`@vitejs/devtools-kit`) integrates the same hub protocol natively and is
+ * the recommended path for a Vite app, so this plugin emits a one-time notice
+ * to that effect (silence it with `{ quiet: true }`). For dev-serving a
+ * single devframe's own SPA, reach for `@devframes/vite/single` instead.
+ */
+declare function viteDevframeHub(options?: ViteDevframeHubOptions): Plugin;
+//#endregion
+export { ViteDevframeHubOptions, viteDevframeHub };

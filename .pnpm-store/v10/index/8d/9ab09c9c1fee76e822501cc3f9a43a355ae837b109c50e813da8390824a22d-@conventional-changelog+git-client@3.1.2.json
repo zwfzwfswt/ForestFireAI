@@ -1,0 +1,115 @@
+{
+  "name": "@conventional-changelog/git-client",
+  "version": "3.1.2",
+  "requiresBuild": false,
+  "files": {
+    "dist/ConventionalGitClient.js": {
+      "checkedAt": 1788700695635,
+      "integrity": "sha512-mr9rwrWtd9DEweJj+6EUunpcNPsa6cb1N/enHI2owJ1e7hMcmwCr1GNFyUnrdL8eyeD9IWCu2q3jH7rG3ragxQ==",
+      "mode": 420,
+      "size": 8608
+    },
+    "dist/GitClient.js": {
+      "checkedAt": 1788700695636,
+      "integrity": "sha512-1+Qf4yUNzATD/zb4kYlEEGJmaAzpsIsRfLmJxG8v4fjYMUVeTollMvtbIDH2Ltr91Hy/pjcCZ48whdpiv94NLg==",
+      "mode": 420,
+      "size": 16515
+    },
+    "dist/index.js": {
+      "checkedAt": 1788700695637,
+      "integrity": "sha512-AuMYa17fhDilBs7nHJRZd1+cB4X3hb3vFaf6+hK9ThvoZf12Zzv6bLR2bk5NfTdJ1Oi3haaBCrYYc4mWHFOySw==",
+      "mode": 420,
+      "size": 378
+    },
+    "dist/types.js": {
+      "checkedAt": 1788700695638,
+      "integrity": "sha512-IImFcoYggPtFGHR8hHUyHOai+XREp4u9jEwuBEPeB0m01pKqHwI15j1qKvadTagtEwdC/gIJ2T4op+N12ZppFw==",
+      "mode": 420,
+      "size": 197
+    },
+    "dist/utils.js": {
+      "checkedAt": 1788700695638,
+      "integrity": "sha512-ukvmrn0yQykGhX04fS6jWhG07AQ1mwOW0CxsQl8kbp38ZsUkvPvNnqSCj4/P+zMFlH/CiHN01HeqGLwePiqZew==",
+      "mode": 420,
+      "size": 1618
+    },
+    "package.json": {
+      "checkedAt": 1788700695639,
+      "integrity": "sha512-TjqlBcvJRe0HzpJv97O2n+3Q0NTGav34fk292UNwu8BYizHKhaQrbBwhXenxEk05HYcnP9Y0TXxMKHEIFaSKpQ==",
+      "mode": 420,
+      "size": 1304
+    },
+    "dist/ConventionalGitClient.d.ts.map": {
+      "checkedAt": 1788700695640,
+      "integrity": "sha512-2ywJQHa/aUv1yv+dc2D5XwLXhpr9zYHDSS7X6oED9eWUVc+HgMAk9M2QMSd3xIS91aYU6YbakOkDkstMR+vRug==",
+      "mode": 420,
+      "size": 730
+    },
+    "dist/GitClient.d.ts.map": {
+      "checkedAt": 1788700695640,
+      "integrity": "sha512-cz0jL2Z67K/K5IMt/814y1IDI9wD2RvuAJa19uU1jWEQkg+HxJX2Ol5DPX7upY9+meeC347sYVF1bGcU1it1Uw==",
+      "mode": 420,
+      "size": 1517
+    },
+    "dist/index.d.ts.map": {
+      "checkedAt": 1788700695641,
+      "integrity": "sha512-w8L0FsYbkfL/iiBIXfmRYH9aQse49k04Y/O6977B/hv0Yv4aS0S5Elv7nonw02WPpKMyTjBz6vrI/XuMC022dQ==",
+      "mode": 420,
+      "size": 192
+    },
+    "dist/types.d.ts.map": {
+      "checkedAt": 1788700695642,
+      "integrity": "sha512-8KFJ+zY2CBC8iNKoA+c6kS8EhJxjlB2FqyB8sksSerbVNKXX7yStMExAN6vQWTzv1ZKZtnYDJRyzUB3zzAhZMg==",
+      "mode": 420,
+      "size": 1632
+    },
+    "dist/utils.d.ts.map": {
+      "checkedAt": 1788700695643,
+      "integrity": "sha512-Od8EfYO/HMO3+wMMnxF7MvbTiv7y9pfxWL/rq0iFP9jtgVZNd955X2zzBYSfjRCe9p8W3aYBRPBVXWGoXVWGFw==",
+      "mode": 420,
+      "size": 369
+    },
+    "LICENSE.md": {
+      "checkedAt": 1788700695643,
+      "integrity": "sha512-eFb4eRsoIqEuiFWIbW8Kx3eRd24bCQMcKLbr/FM3FyiHr5kmxc+vvnOViuDd6CM3gwkcjxLxruB1ZGO8I9CjfQ==",
+      "mode": 420,
+      "size": 1127
+    },
+    "README.md": {
+      "checkedAt": 1788700695644,
+      "integrity": "sha512-MNH2O1hSbarqFa5ipvYB97d0h150aOy9t1hLNeJnpz1otoVxUoJdcZkkzas/x561grdUuXiaB0xstTMpLEA6Yw==",
+      "mode": 420,
+      "size": 2708
+    },
+    "dist/ConventionalGitClient.d.ts": {
+      "checkedAt": 1788700695645,
+      "integrity": "sha512-tEHtR8iff0LFnIMWvqtAi5p0F9hp3j77h/XZOW1L/vyX157e1FDdjqsXG+atbjfAJQkWepsZux1tyLwwonVZ2Q==",
+      "mode": 420,
+      "size": 2123
+    },
+    "dist/GitClient.d.ts": {
+      "checkedAt": 1788700695645,
+      "integrity": "sha512-fFa5/yeeG+H4i9ROjJMbU2BzSUckPD5dS7GPDiNHH3bnnwmBmgCgBHBGnluwoQDJ04m/Q9UaUwaEGUOjT5oReg==",
+      "mode": 420,
+      "size": 4002
+    },
+    "dist/index.d.ts": {
+      "checkedAt": 1788700695646,
+      "integrity": "sha512-RO5a4M4R1Pl+JbWyLNZmVJbguNMKIL3PWHWeqTcjFksDHhBKqLx23jbR4AfN4tXbJWEVL5Sk3E9i76ogkX7yNw==",
+      "mode": 420,
+      "size": 172
+    },
+    "dist/types.d.ts": {
+      "checkedAt": 1788700695647,
+      "integrity": "sha512-9k5EwJE/rVIndHHXx2/xsL9fhmlDK3u2yHQlffTHW1KWbLXRL/QAgc5lT48XzTCrw6khIqFJoRanEPTyxRgsvA==",
+      "mode": 420,
+      "size": 2002
+    },
+    "dist/utils.d.ts": {
+      "checkedAt": 1788700695648,
+      "integrity": "sha512-UlH2YV6WOPsLs8Y2R9ntgoODeDF5xCv+wjGApADh3yHXou5uYIT6hLBwdUiUJjX3Mf2vK7aD5SiF09ZiyezuRw==",
+      "mode": 420,
+      "size": 551
+    }
+  }
+}

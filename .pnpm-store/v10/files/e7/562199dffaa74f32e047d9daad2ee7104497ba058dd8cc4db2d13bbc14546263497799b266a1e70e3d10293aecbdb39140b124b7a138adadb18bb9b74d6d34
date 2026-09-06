@@ -1,0 +1,147 @@
+import { IncomingMessage, ServerResponse } from "node:http";
+import { Plugin } from "vite";
+import { DevframeDefinition, McpSetting } from "devframe";
+import { DevframeAuthHandler } from "devframe/node/auth";
+import { WsOriginRegistry } from "devframe/rpc/transports/ws-server";
+//#region src/single.d.ts
+/**
+ * The slice of a Vite dev server these plugins touch, deliberately
+ * narrower than Vite's real `ViteDevServer` (which carries the module
+ * graph, watcher, transform pipeline, …) so a host can hand a plugin
+ * anything shaped like this, and a test double only needs to fake two
+ * fields. A real `ViteDevServer` satisfies this structurally, so each
+ * plugin's `configureServer(server: ViteDevServer)` hook (typed against
+ * the real `Plugin` below) is still fully type-safe.
+ */
+interface DevframeViteDevServerLike {
+  middlewares: {
+    use: ((path: string, handler: (req: IncomingMessage, res: ServerResponse, next?: (err?: unknown) => void) => void) => void) & ((handler: (req: IncomingMessage, res: ServerResponse, next?: (err?: unknown) => void) => void) => void);
+  };
+  /**
+   * Deliberately structural (just the one event these plugins listen for)
+   * rather than `NodeHttpServer`: Vite's real `ViteDevServer.httpServer`
+   * is `http.Server | Http2SecureServer | null`, and `Http2SecureServer`
+   * doesn't satisfy `http.Server`'s full shape.
+   */
+  httpServer?: {
+    once: (event: 'close', listener: () => void) => unknown;
+  } | null;
+}
+/** A devframe Vite plugin: a real Vite `Plugin`, scoped to its `serve`-only hooks. */
+type DevframeVitePlugin = Plugin;
+interface DevframeVitePluginOptions {
+  /**
+   * Mount base. Defaults to `def.basePath ?? '/__<id>/'` for this hosted
+   * adapter, so the devframe shares the origin with the host Vite app.
+   *
+   * Relative spellings like `'./'` (common for base-agnostic Nuxt builds)
+   * are normalized to absolute paths so they compose with Vite's connect
+   * router.
+   */
+  base?: string;
+}
+/**
+ * Statically mount a devframe's built SPA (`def.clientAssets`) at
+ * `options.base` inside an existing Vite dev server. No RPC server is
+ * started; reach for {@link devframeViteBridge} when the mounted UI
+ * needs a live RPC/WebSocket connection back to the devframe.
+ *
+ * Use this when the devframe ships its own pre-built UI and the host
+ * only needs to serve it alongside its own app (e.g. a devtools dock
+ * whose backend runs elsewhere, or a hub that only wants the static
+ * assets).
+ */
+declare function devframeVitePlugin(d: DevframeDefinition, options?: DevframeVitePluginOptions): DevframeVitePlugin;
+interface DevframeViteBridgeOptions {
+  /**
+   * Mount base. Defaults to `def.basePath ?? '/__<id>/'` for this hosted
+   * adapter, so the devframe shares the origin with the host Vite app.
+   *
+   * Relative spellings like `'./'` (common for base-agnostic Nuxt builds)
+   * are normalized to absolute paths so they compose with Vite's connect
+   * router.
+   */
+  base?: string;
+  /**
+   * Pin a side-car port for the RPC socket instead of sharing Vite's
+   * server. Default: share Vite's HTTP server (side-car only when Vite
+   * has none).
+   */
+  port?: number;
+  /** Override the side-car bind host. Default: `def.cli?.host ?? 'localhost'`. */
+  host?: string;
+  /** Flag bag forwarded to `def.setup(ctx, { flags })`. */
+  flags?: Record<string, unknown>;
+  /**
+   * Whether the bridged devframe runs its own auth gate. The RPC endpoint is
+   * reachable by anything that can open its socket, so it **gates by
+   * default**: when unset, authentication resolves through devframe's
+   * interactive OTP gate (unless the definition's `cli.auth` opts out), and
+   * the bridge prints its code/link banner to stdout. Pass a
+   * {@link DevframeAuthHandler} to install a custom scheme, or `false` to opt
+   * out for a single-user localhost host that owns the trust boundary
+   * another way.
+   *
+   * @default gated (devframe's interactive OTP, unless `cli.auth` opts out)
+   */
+  auth?: boolean | DevframeAuthHandler;
+  /**
+   * Expose the bridge's route-based MCP server (Streamable-HTTP) at
+   * `<base>__mcp` (on the Vite app's own origin) and advertise it in the
+   * bridge's `__connection.json`. Overrides `def.cli?.mcp`, `undefined`
+   * falls through to it, then to the `'auto'` default (mount once the agent
+   * surface is non-empty); `false` disables the route regardless.
+   */
+  mcp?: McpSetting;
+  /**
+   * Widen the WebSocket origin check beyond devframe's loopback-only
+   * default. A bridge serves the tool same-origin with the host Vite app,
+   * so reaching it from a non-loopback origin (`vite --host`, containers,
+   * Codespaces, tunnels) needs the dev server's own origin allowed. Pass
+   * extra origins, a {@link WsOriginRegistry}, or `false` to disable the
+   * check (safe when the bridge's auth gate owns the trust boundary).
+   * Forwarded verbatim to `initDevframe`.
+   */
+  allowedOrigins?: readonly string[] | WsOriginRegistry | false;
+}
+/**
+ * Bridge a devframe's RPC + WebSocket backend into an existing Vite dev
+ * server: the host app owns the SPA (`clientAssets` is never mounted), and this
+ * plugin serves discovery (`<base>__connection.json`), the WebSocket RPC
+ * upgrade (`<base>__ws`, shared on Vite's own HTTP server), and the
+ * optional MCP route through {@link initDevframe}'s node middleware, so
+ * the host-served SPA can discover the endpoint via `connectDevframe`.
+ *
+ * The bridge **gates by default** (devframe's interactive OTP unless the
+ * definition's `cli.auth` opts out), printing its code/link banner to
+ * stdout, so a bridged devframe isn't silently reachable by anything that
+ * can open its socket. Pass `options.auth: false` to opt out for a
+ * single-user localhost host, or a {@link DevframeAuthHandler} for a
+ * custom scheme.
+ *
+ * Use this when integrating with frameworks that own the SPA (Nuxt, Astro,
+ * SolidStart, plain Vite apps). Reach for {@link devframeVitePlugin} instead
+ * when the devframe just needs to serve its own pre-built UI with no live
+ * backend, or `createCac` (`devframe/adapters/cac`) for the all-in-one
+ * `dev` / `build` / `mcp` shell.
+ */
+declare function devframeViteBridge(d: DevframeDefinition, options?: DevframeViteBridgeOptions): DevframeVitePlugin;
+interface DevframeViteOptions extends DevframeViteBridgeOptions {
+  /**
+   * Start devframe's RPC/WS bridge ({@link devframeViteBridge}) instead of
+   * statically mounting the built SPA ({@link devframeVitePlugin}).
+   *
+   * @default false (static mount, no server)
+   */
+  bridge?: boolean;
+}
+/**
+ * Convenience wrapper around {@link devframeVitePlugin} /
+ * {@link devframeViteBridge}, picked via `options.bridge`. Reach for the
+ * two underlying plugins directly when a devframe needs both mounted at
+ * once (e.g. a bridge for RPC alongside a static mount serving its own
+ * bundled UI).
+ */
+declare function devframeVite(d: DevframeDefinition, options?: DevframeViteOptions): DevframeVitePlugin;
+//#endregion
+export { DevframeViteBridgeOptions, DevframeViteDevServerLike, DevframeViteOptions, DevframeVitePlugin, DevframeVitePluginOptions, devframeVite, devframeViteBridge, devframeVitePlugin };

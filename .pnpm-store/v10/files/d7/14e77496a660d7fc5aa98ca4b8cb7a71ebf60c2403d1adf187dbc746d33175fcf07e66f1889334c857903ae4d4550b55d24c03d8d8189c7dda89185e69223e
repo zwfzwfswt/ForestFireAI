@@ -1,0 +1,48 @@
+/**
+ * @description set cell property menu
+ * @author hsuna
+ */
+import { IButtonMenu, IDomEditor } from '@wangeditor-next/core';
+export type FieldName = 'borderStyle' | 'borderColor' | 'borderWidth' | 'backgroundColor' | 'textAlign' | 'verticalAlign';
+type SelectOption = {
+    value: string;
+    label: string;
+};
+type SegmentOption = SelectOption & {
+    svg?: string;
+};
+declare class TableProperty implements IButtonMenu {
+    readonly title: string;
+    iconSvg: string;
+    readonly tag = "button";
+    readonly showModal = true;
+    readonly modalWidth: number;
+    readonly menu: string;
+    readonly propertyFields: FieldName[];
+    readonly borderStyle: {
+        value: string;
+        label: string;
+    }[];
+    readonly textAlignOptions: SegmentOption[];
+    readonly verticalAlignOptions: SegmentOption[];
+    private renderRow;
+    private createFieldControl;
+    private renderSelect;
+    private renderNumber;
+    private renderColor;
+    private renderSegment;
+    getValue(_editor: IDomEditor): string | boolean;
+    isActive(_editor: IDomEditor): boolean;
+    isDisabled(editor: IDomEditor): boolean;
+    exec(_editor: IDomEditor, _value: string | boolean): void;
+    getModalContentNode(editor: IDomEditor): import("slate").NodeEntry<import("../../utils").WithType<import("packages/custom-types").CustomElement>>;
+    getModalPositionNode(_editor: IDomEditor): null;
+    getModalContentElem(editor: IDomEditor): Element | null;
+    getPanelContentElem(editor: any, { mark, selectedColor, callback }: {
+        mark: any;
+        selectedColor: any;
+        callback: any;
+    }): import("dom7").Dom7Array;
+    updateColorPanelActive($panel: any, selectedColor: string): void;
+}
+export default TableProperty;

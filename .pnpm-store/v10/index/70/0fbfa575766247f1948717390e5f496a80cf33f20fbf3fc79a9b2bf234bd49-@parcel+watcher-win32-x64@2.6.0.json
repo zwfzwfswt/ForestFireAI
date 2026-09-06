@@ -1,0 +1,31 @@
+{
+  "name": "@parcel/watcher-win32-x64",
+  "version": "2.6.0",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700699319,
+      "integrity": "sha512-T0JGD6ChQ+LXJ2sw/LimGHIXPuWO7GAS4lqsi5ZsYnf90GY8ijGRpGlACAsIe1H+HmPb75U6AL5ZEVZd/zN4fg==",
+      "mode": 420,
+      "size": 1077
+    },
+    "package.json": {
+      "checkedAt": 1788700699319,
+      "integrity": "sha512-NSxSnfF2GkIicVWdD/vovHM6EnBpBeo9fkdy8pcODIcMA86N5lzEwv1FjGCAOsbGelcmFybi5yCUA/gaiWMx6A==",
+      "mode": 420,
+      "size": 605
+    },
+    "README.md": {
+      "checkedAt": 1788700699320,
+      "integrity": "sha512-kJlkdD7L1Y4sMZnQiDX/PhbKVNydIoLSH3c3CQhwmu7wMVaNfUUwdGayCurjYabGp4/elp6pN+Hp41atAgZucA==",
+      "mode": 420,
+      "size": 106
+    },
+    "watcher.node": {
+      "checkedAt": 1788700699321,
+      "integrity": "sha512-D/RbiIUR71uDXyEiCD7vG3mc+xBNKZ63sGTpvz/j2yodvzkgn0jyNn6BQoA7vyQcvVoLupqjI80J5zL9JQAg0w==",
+      "mode": 420,
+      "size": 530944
+    }
+  }
+}

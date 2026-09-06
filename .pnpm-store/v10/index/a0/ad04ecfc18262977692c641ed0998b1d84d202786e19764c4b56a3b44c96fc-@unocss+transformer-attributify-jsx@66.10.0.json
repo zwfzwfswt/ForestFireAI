@@ -1,0 +1,31 @@
+{
+  "name": "@unocss/transformer-attributify-jsx",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700694089,
+      "integrity": "sha512-ndzo38m31HC1xGqKtn84LDhoxouztai2f/Mgr4kmKlSP47D7wyGbojqcPfsgZvVmF71k68Itu7EZByIVxVPiCQ==",
+      "mode": 420,
+      "size": 1066
+    },
+    "README.md": {
+      "checkedAt": 1788700694090,
+      "integrity": "sha512-lMZ4vIQz2tqas5w5vQfYI/sfbdmJ1of7dnXLXI/wrv/wN0cJK2QUZTG3EDtbMR7bIZ2QynM2njv5p3YX0p7dTw==",
+      "mode": 420,
+      "size": 2591
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700694091,
+      "integrity": "sha512-O/3W/j7EHlxwzUstmnOU5vok5QDfkZS0CRuuIpxFGDrjnS1liGnUcPDETUEv0+PPRUoQpMaK3M73lLufXogKtQ==",
+      "mode": 420,
+      "size": 5345
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700694092,
+      "integrity": "sha512-oeek3V9zDVL0rYAcJ9unnwAdfzRbHZkaahqdR+40J8sAsjdGb8GCVX7OcBUzbw9RrOoU7SY04GDXv7wmlnm9Ww==",
+      "mode": 420,
+      "size": 1495
+    }
+  }
+}

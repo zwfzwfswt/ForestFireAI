@@ -1,0 +1,43 @@
+{
+  "name": "vue-tsc",
+  "version": "3.3.11",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700674801,
+      "integrity": "sha512-o7HEIFnimZVIAv9KTD/PP6FfDvz7SNoM2Tyqrp7XIlPMtKl8zX2zLmOOIbS4YIvXl2tcZX7YPsvHpuGTYVMULQ==",
+      "mode": 420,
+      "size": 1076
+    },
+    "index.js": {
+      "checkedAt": 1788700674802,
+      "integrity": "sha512-C4TmRT5DCdH27N4/AtB5N2C5v9UsBQmEGboAuASaqS/fE9ZiftqGBZZsGdSPK2gOatvmagKQfmx0NJun0Lu4NA==",
+      "mode": 420,
+      "size": 3487
+    },
+    "bin/vue-tsc.js": {
+      "checkedAt": 1788700674803,
+      "integrity": "sha512-TjRS1K05e1WPiwPcKC15S6QXP61b3khDbURWeuypb0yVSUBczDHlUcMx56udR00P4nsra4VMxOCLZuLJFKDpGg==",
+      "mode": 493,
+      "size": 50
+    },
+    "package.json": {
+      "checkedAt": 1788700674804,
+      "integrity": "sha512-Lgp5iZcRKX/a1Ny25XAVEz9pxrcK98EoUqd3iO5gWPdk15V5uzzo+acai0+AOser+10J+NyAafBUR1RoXqmQfg==",
+      "mode": 420,
+      "size": 588
+    },
+    "README.md": {
+      "checkedAt": 1788700674805,
+      "integrity": "sha512-dFutrMf9uMjGf8fi88Tb82avf55XpmLI6LKYm70RdllpbR0NddI5BtFlBAMJMKV+k1DNV4mxuhtCX5HxCSv0pQ==",
+      "mode": 420,
+      "size": 1867
+    },
+    "index.d.ts": {
+      "checkedAt": 1788700674806,
+      "integrity": "sha512-TwsF5wlIx5oUfVm4xL0PD4iUjg1mbUNgwHLCMmQrYd+kZjd2W+fRMS2sf9Sid6s5kkKA3i7nKZBk+2yPDcliuQ==",
+      "mode": 420,
+      "size": 52
+    }
+  }
+}

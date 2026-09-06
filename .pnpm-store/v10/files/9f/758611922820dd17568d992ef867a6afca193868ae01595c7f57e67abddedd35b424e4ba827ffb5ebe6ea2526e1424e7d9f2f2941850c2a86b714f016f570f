@@ -1,0 +1,49 @@
+{
+  "name": "@devframes/service-shiki",
+  "type": "module",
+  "version": "0.9.12",
+  "description": "Devframe wire service that renders Shiki syntax highlighting on the server, so plugins stop re-bundling highlighters.",
+  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/devframes/devframe#readme",
+  "repository": {
+    "directory": "services/shiki",
+    "type": "git",
+    "url": "git+https://github.com/devframes/devframe.git"
+  },
+  "bugs": "https://github.com/devframes/devframe/issues",
+  "keywords": [
+    "devframe",
+    "devframe-service",
+    "devtools",
+    "shiki",
+    "syntax-highlighting"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "devframe": "0.9.12"
+  },
+  "dependencies": {
+    "shiki": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "devframe": "0.9.12",
+    "tsdown": "^0.22.14",
+    "vitest": "^4.1.11"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "watch": "tsdown --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

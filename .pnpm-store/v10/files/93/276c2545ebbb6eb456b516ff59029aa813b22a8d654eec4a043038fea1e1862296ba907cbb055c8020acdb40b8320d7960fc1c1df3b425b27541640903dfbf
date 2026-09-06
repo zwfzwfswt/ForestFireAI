@@ -1,0 +1,12 @@
+/**
+ * @description node -> html
+ * @author wangfupeng
+ */
+import { Descendant } from 'slate';
+import type { IDomEditor } from '../editor/interface';
+export interface INodeToHtmlOptions {
+    includeId?: boolean;
+    idKey?: string;
+}
+declare function node2html(node: Descendant, editor: IDomEditor, options?: INodeToHtmlOptions): string;
+export default node2html;

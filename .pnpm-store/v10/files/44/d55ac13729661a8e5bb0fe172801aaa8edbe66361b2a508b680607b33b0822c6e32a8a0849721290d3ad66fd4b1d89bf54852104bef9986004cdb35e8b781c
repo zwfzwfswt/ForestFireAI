@@ -1,0 +1,37 @@
+/**
+ * @description Format Painter
+ * @author CodePencil
+ */
+import { IButtonMenu, IDomEditor } from '@wangeditor-next/core';
+import { Text } from 'slate';
+type BlockTypeForFormatPainter = 'header1' | 'header2' | 'header3' | 'header4' | 'header5' | 'header6' | 'blockquote' | 'list-item' | 'todo';
+type OrderedListTypeForFormatPainter = '1' | 'a' | 'A' | 'i' | 'I';
+interface BlockStyleForFormatPainter {
+    type: BlockTypeForFormatPainter;
+    ordered?: boolean;
+    orderType?: OrderedListTypeForFormatPainter;
+}
+interface FormatPaintAttributes {
+    isSelect: boolean;
+    formatStyle: Omit<Text, 'text'> | null;
+    formatBlockStyle: BlockStyleForFormatPainter | null;
+}
+declare class FormatPainter implements IButtonMenu {
+    title: string;
+    iconSvg: string;
+    tag: string;
+    static attrs: FormatPaintAttributes;
+    getValue(_editor: IDomEditor): string | boolean;
+    isActive(_editor: IDomEditor): boolean;
+    isDisabled(_editor: IDomEditor): boolean;
+    private isSourceBlockType;
+    private isTargetBlockType;
+    private getTopLevelSelectedBlocks;
+    private normalizeListOrderType;
+    private getSelectedBlockStyle;
+    private unsetListAttrs;
+    private applyBlockStyle;
+    setFormatHtml(editor: IDomEditor): void;
+    exec(editor: IDomEditor): void;
+}
+export default FormatPainter;

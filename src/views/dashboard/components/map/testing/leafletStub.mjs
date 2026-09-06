@@ -4,6 +4,7 @@ export function createLeafletStub() {
   class Layer {
     constructor(kind, coordinates, options) {
       Object.assign(this, { kind, coordinates, options });
+      this.events = new Map();
     }
     addTo(parent) {
       parent.addLayer(this);
@@ -21,10 +22,33 @@ export function createLeafletStub() {
       this.content = value;
       return this;
     }
-    on() {
+    on(name, fn) {
+      this.events.set(name, fn);
       return this;
     }
     off() {
+      this.events.clear();
+      return this;
+    }
+    fire(name) {
+      this.events.get(name)?.();
+      return this;
+    }
+    bindPopup(content, options) {
+      this.popup = { content, options };
+      return this;
+    }
+    openPopup() {
+      this.popupOpen = true;
+      return this;
+    }
+    closePopup() {
+      this.popupOpen = false;
+      return this;
+    }
+    unbindPopup() {
+      this.popup = undefined;
+      this.popupOpen = false;
       return this;
     }
   }
@@ -162,6 +186,9 @@ export function createLeafletStub() {
           this.center = center;
           this.zoom = zoom;
           return this;
+        },
+        flyTo(center, zoom) {
+          return this.setView(center, zoom);
         },
         invalidateSize() {},
         remove() {

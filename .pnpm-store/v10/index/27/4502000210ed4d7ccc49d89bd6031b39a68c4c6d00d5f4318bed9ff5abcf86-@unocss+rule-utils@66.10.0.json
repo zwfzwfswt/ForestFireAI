@@ -1,0 +1,31 @@
+{
+  "name": "@unocss/rule-utils",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700696401,
+      "integrity": "sha512-pBY91/a+7wj7NtL8mIX1u+uq+JnTNwDgCQbRITtDpiXJ0dQJN3HCG9bDU0ZNtHkrNhkgJF4uEmorOWh51UdDEA==",
+      "mode": 420,
+      "size": 838
+    },
+    "README.md": {
+      "checkedAt": 1788700696402,
+      "integrity": "sha512-CKxAbR87f4CtPNdh68EKrQgbnOsD4ZJ1vuznUycukOvIiy7AdXnIiSqJFuRGGK75CqL6pZZZ/eDPiIRXgVL7Zg==",
+      "mode": 420,
+      "size": 195
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700696403,
+      "integrity": "sha512-CRvPnSH/GOX5xU6Ws1igqeX9Naxb/cWTJA7I7r0BrEyL1qw1c1SRy2GoSWst73+hEllf1D9R7AZSd0lyVsXFjg==",
+      "mode": 420,
+      "size": 23502
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700696403,
+      "integrity": "sha512-Nbxs0W0rmQ0Kx10hpplTn7+a4hhpxjc3UlnbbCcyiFWC6+vKMXrL8itmo17INKIoTtIUMT9DctISBRFxwnQXzA==",
+      "mode": 420,
+      "size": 6430
+    }
+  }
+}

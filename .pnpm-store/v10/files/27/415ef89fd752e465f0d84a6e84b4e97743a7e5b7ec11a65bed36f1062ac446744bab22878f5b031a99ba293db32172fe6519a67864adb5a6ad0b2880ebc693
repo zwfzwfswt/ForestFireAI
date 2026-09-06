@@ -1,0 +1,152 @@
+import { deepClone, isArray, isFunction } from "@pengzhanbo/utils";
+import { createHash } from "node:crypto";
+import { Transform } from "node:stream";
+
+
+var SSEStream = class extends Transform {
+	
+	constructor(req) {
+		super({ objectMode: true });
+		req.socket.setKeepAlive(true);
+		req.socket.setNoDelay(true);
+		req.socket.setTimeout(0);
+	}
+	
+	pipe(destination, options) {
+		if (destination.writeHead) {
+			destination.writeHead(200, {
+				"Content-Type": "text/event-stream; charset=utf-8",
+				"Transfer-Encoding": "identity",
+				"Cache-Control": "no-cache",
+				"Connection": "keep-alive"
+			});
+			destination.flushHeaders?.();
+		}
+		destination.write(":ok\n\n");
+		return super.pipe(destination, options);
+	}
+	
+	_transform(message, encoding, callback) {
+		if (message.comment) this.push(`: ${message.comment}\n`);
+		if (message.event) this.push(`event: ${message.event}\n`);
+		if (message.id) this.push(`id: ${message.id}\n`);
+		if (message.retry) this.push(`retry: ${message.retry}\n`);
+		if (message.data) this.push(dataString(message.data));
+		this.push("\n");
+		callback();
+	}
+	
+	write(message, ...args) {
+		return super.write(message, ...args);
+	}
+	
+	destroy(error) {
+		if (error) this.write({
+			event: "error",
+			data: error.message
+		});
+		this.end();
+		return this;
+	}
+};
+
+function dataString(data) {
+	if (typeof data === "object") return dataString(JSON.stringify(data));
+	return data.split(/\r\n|\r|\n/).map((line) => `data: ${line}\n`).join("");
+}
+
+function createSSEStream(req, res) {
+	const sse = new SSEStream(req);
+	sse.pipe(res);
+	return sse;
+}
+
+
+function defineMock(config) {
+	return config;
+}
+
+function createDefineMock(transformer) {
+	const define = (config) => {
+		if (isArray(config)) config = config.map((item) => transformer(item) || item);
+		else config = transformer(config) || config;
+		return config;
+	};
+	return define;
+}
+
+
+
+
+const mockDataCache =  new Map();
+
+const responseCache =  new WeakMap();
+
+const staleInterval = 70;
+
+var CacheImpl = class {
+	
+	value;
+	
+	#hash;
+	
+	#lastUpdate;
+	
+	#persistOnHMR;
+	
+	constructor(value, persistOnHMR) {
+		this.value = value;
+		this.#hash = getHash(value);
+		this.#lastUpdate = Date.now();
+		this.#persistOnHMR = persistOnHMR ?? false;
+	}
+	
+	hotUpdate(value) {
+		if (this.#persistOnHMR) return;
+		if (Date.now() - this.#lastUpdate < staleInterval) return;
+		const hash = getHash(value);
+		if (this.#hash !== hash) {
+			this.value = deepClone(value);
+			this.#hash = hash;
+			this.#lastUpdate = Date.now();
+		}
+	}
+	
+	setPersistOnHMR(persistOnHMR) {
+		if (!this.#persistOnHMR) this.#persistOnHMR = persistOnHMR;
+	}
+};
+
+function defineMockData(key, initialData, options) {
+	let cache = mockDataCache.get(key);
+	if (!cache) {
+		const newCache = new CacheImpl(initialData, options?.persistOnHMR);
+		const existing = mockDataCache.get(key);
+		if (existing) cache = existing;
+		else {
+			mockDataCache.set(key, newCache);
+			cache = newCache;
+		}
+	} else cache.setPersistOnHMR(options?.persistOnHMR ?? false);
+	cache.hotUpdate(initialData);
+	if (responseCache.has(cache)) return responseCache.get(cache);
+	const res = [() => cache.value, (val) => {
+		if (isFunction(val)) val = val(cache.value) ?? cache.value;
+		cache.value = val;
+	}];
+	Object.defineProperty(res, "value", {
+		get() {
+			return cache.value;
+		},
+		set(val) {
+			cache.value = val;
+		}
+	});
+	responseCache.set(cache, res);
+	return res;
+}
+function getHash(data) {
+	return createHash("sha256").update(JSON.stringify(data)).digest("hex");
+}
+
+export { createDefineMock, createSSEStream, defineMock, defineMockData };

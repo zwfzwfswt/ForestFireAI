@@ -1,0 +1,328 @@
+import { n as DevframeJsonRenderSpec, r as JsonRenderView } from "../types-ByXkazOp.mjs";
+import { StandardSchemaV1 } from "@standard-schema/spec";
+import { DevframeNodeContext, DevframeScopedNodeContext } from "devframe";
+//#region src/node/create-view.d.ts
+/** Options for {@link createJsonRenderView}. */
+interface CreateJsonRenderViewOptions<SpecType extends DevframeJsonRenderSpec = DevframeJsonRenderSpec> {
+  /**
+   * Stable, author-supplied id, unique within the view's scope. Forms the
+   * shared-state key `devframe:json-render:<scope>:<id>` and never changes
+   * across updates, so a client keeps its subscription across reconnects.
+   */
+  id: string;
+  /** The initial spec. */
+  spec: SpecType;
+  /** A replacement Standard Schema validator, or `false` to disable validation. */
+  schema?: StandardSchemaV1 | false;
+  /**
+   * Override the scope segment of the view's stable id. Defaults to the
+   * context's namespace when created from a scoped context, otherwise
+   * `'global'`.
+   */
+  scope?: string;
+  /**
+   * Human-facing label published in the view index and used by a multi-view
+   * frontend (e.g. the standalone SPA's view switcher) to name this view.
+   * Defaults to {@link CreateJsonRenderViewOptions.id}.
+   */
+  title?: string;
+}
+type AnyContext = DevframeNodeContext | DevframeScopedNodeContext<string>;
+/**
+ * Create a JSON-render view bound to a devframe context. Registers a
+ * server-side shared state (patches enabled) carrying the live spec + state,
+ * validates element props at ingress against the base catalog, and returns a
+ * handle plus the serializable {@link JsonRenderView.ref} a client subscribes
+ * through.
+ *
+ * @example
+ * ```ts
+ * const view = createJsonRenderView(ctx, { id: 'metrics', spec })
+ * view.update(nextSpec)
+ * view.patchState([{ op: 'replace', path: '/count', value: 3 }])
+ * view.dispose()
+ * ```
+ */
+declare function createJsonRenderView<SpecType extends DevframeJsonRenderSpec = DevframeJsonRenderSpec>(ctx: AnyContext, options: CreateJsonRenderViewOptions<SpecType>): JsonRenderView<SpecType>;
+//#endregion
+//#region ../../node_modules/.pnpm/nostics@1.2.0/node_modules/nostics/dist/diagnostic-wduO7saY.d.mts
+//#region src/utils.d.ts
+/**
+ * A value of type T, or a function that resolves T from a single params object.
+ *
+ * @internal
+ */
+type ValueOrFn<T, P = any> = T | ((params: P) => T);
+/**
+ * Extracts the param type from a single-arg function, or `never` for
+ * non-function inputs. Pairs with {@link ValueOrFn}.
+ *
+ * @internal
+ */
+type ExtractFnParam<T> = T extends ((params: infer P) => any) ? P : never;
+/**
+ * Converts a union of types to their intersection.
+ *
+ * @internal
+ */
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
+/**
+ * `true` when `T` is the `any` type.
+ *
+ * @internal
+ */
+type IsAny<Type> = 0 extends 1 & Type ? true : false;
+/**
+ * `true` when `T` is the `unknown` type (and not `any`).
+ *
+ * @internal
+ */
+type IsUnknown<Type> = IsAny<Type> extends true ? false : unknown extends Type ? true : false;
+/**
+ * Expands a type to its property listing so editor hovers show the resolved
+ * shape instead of a chain of aliases / intersections.
+ *
+ * @internal
+ */
+type Prettify<Type> = { [Key in keyof Type]: Type[Key]; };
+//#endregion
+//#region src/diagnostic.d.ts
+/**
+ * Define-time shape of a diagnostic. Each field can be a static value or a
+ * function that resolves it from a shared `params` object passed at call
+ * time. Runtime-only fields (`cause`, `sources`) from {@link DiagnosticInit}
+ * are intentionally omitted: they're only meaningful at the call site.
+ */
+interface DiagnosticDefinition<P = any> {
+  /**
+   * The error message: why this failed. String, or a function of `params`.
+   *
+   * @example
+   * ```ts
+   * why: (p: { name: string }) => `module "${p.name}" failed to load`
+   * ```
+   */
+  why: ValueOrFn<string, P>;
+  /**
+   * Actionable instructions on how to resolve the problem. String, or a
+   * function of `params`.
+   *
+   * @example
+   * ```ts
+   * fix: (p: { name: string }) => `run "npm install ${p.name}"`
+   * ```
+   */
+  fix?: ValueOrFn<string, P>;
+  /**
+   * Per-code docs URL. A string overrides
+   * {@link DefineDiagnosticsOptions.docsBase} for this code; `false` opts this
+   * code out entirely, even when `docsBase` is set. When omitted, the URL is
+   * derived from `docsBase`.
+   */
+  docs?: string | false;
+}
+/**
+ * Runtime-only fields that can be passed alongside the interpolation params
+ * at call time. Merged into the same object so callers pass everything in
+ * one place.
+ */
+interface DiagnosticCallParams {
+  /**
+   * Original error or exception that triggered this diagnostic. Pass it
+   * through when re-throwing so the original stack trace is preserved.
+   */
+  cause?: unknown;
+  /**
+   * Locations in user code that contributed to this diagnostic, in
+   * `file:line:column` format. Useful for compilers and other tools where the
+   * JS stack trace doesn't reflect the user's source.
+   */
+  sources?: string[];
+}
+/**
+ * Structured initializer for a {@link Diagnostic}. `why` is the only required
+ * field: it becomes the {@link Diagnostic.message}. The remaining fields are
+ * optional metadata that reporters and consumers can render or forward.
+ */
+interface DiagnosticInit extends DiagnosticCallParams {
+  /**
+   * The diagnostic code, e.g. `MATH_E001`. Appear as {@link Diagnostic.name}.
+   */
+  code: string;
+  /**
+   * The actual error message: why this failed.
+   * Mirrored to `Error.message`.
+   */
+  why: string;
+  /**
+   * Optional actionable instructions on how to resolve the problem.
+   */
+  fix?: string;
+  /**
+   * URL to extended documentation for this diagnostic.
+   */
+  docs?: string;
+}
+/**
+ * Permissive reporter constraint used internally so reporters with 1 arg,
+ * required options, or optional options all satisfy the array constraint.
+ *
+ * @internal
+ */
+type AnyDiagnosticReporter = (diagnostic: Diagnostic, options: any) => void;
+/**
+ * Resolves the `params` type a code expects from the intersection of params
+ * across all function-typed fields, falling back to `{}` when every field is
+ * static. Merged with {@link DiagnosticCallParams} at the call site.
+ *
+ * @internal
+ */
+type InferCodeParams<Def> = [ExtractFnParam<Def[keyof Def]>] extends [never] ? {} : UnionToIntersection<ExtractFnParam<Def[keyof Def]>>;
+/**
+ * The first positional argument of a {@link DiagnosticHandle} call:
+ * interpolation params merged with the runtime-only call-site fields
+ * (`cause`, `sources`).
+ *
+ * @internal
+ */
+type CallSiteParams<Params> = Params & DiagnosticCallParams;
+/**
+ * Resolves the full argument tuple for a {@link DiagnosticHandle} call.
+ * Branches on whether params and reporter options each have required fields.
+ * Required positions become required tuple elements, all-optional ones
+ * become `?`, and when no reporter declares any options the parameter is
+ * omitted entirely.
+ *
+ * @internal
+ */
+type ActionArgs<Params, ReporterOpts> = keyof ReporterOpts extends never ? {} extends Params ? [params?: CallSiteParams<Params>] : [params: CallSiteParams<Params>] : {} extends ReporterOpts ? {} extends Params ? [params?: CallSiteParams<Params>, reporterOptions?: ReporterOpts] : [params: CallSiteParams<Params>, reporterOptions?: ReporterOpts] : {} extends Params ? [params: CallSiteParams<Params> | undefined, reporterOptions: ReporterOpts] : [params: CallSiteParams<Params>, reporterOptions: ReporterOpts];
+/**
+ * Per-code handle exposed by {@link defineDiagnostics}. Each code is a
+ * callable: invoke it to build the diagnostic and run every reporter, or
+ * prefix the call with `throw` to raise it.
+ *
+ * @example
+ * ```ts
+ * diagnostics.MATH_E001({ name: 'x' })           // report
+ * throw diagnostics.MATH_E001({ name: 'x' })     // throw
+ * ```
+ */
+interface DiagnosticHandle<Params, ReporterOpts> {
+  /**
+   * Builds the diagnostic, runs every reporter, and returns the diagnostic
+   * instance. The returned diagnostic can be inspected, attached as `cause`,
+   * or thrown with `throw`.
+   */
+  (...args: ActionArgs<Params, ReporterOpts>): Diagnostic;
+}
+/**
+ * Return type of {@link defineDiagnostics}.
+ */
+type Diagnostics<Codes extends Record<string, DiagnosticDefinition>, Reporters extends readonly AnyDiagnosticReporter[]> = { [Code in keyof Codes]: DiagnosticHandle<InferCodeParams<Codes[Code]>, Prettify<ExtractReportersOptions<Reporters>>>; };
+declare class Diagnostic extends Error {
+  name: string;
+  /**
+   * The diagnostic code, e.g. `MATH_E001`.
+   * Also appears as the `name` property.
+   */
+  code: string;
+  /**
+   * URL to extended documentation for this diagnostic code.
+   * Auto-generated from {@link DefineDiagnosticsOptions.docsBase}.
+   */
+  docs?: string;
+  /**
+   * Optional actionable instructions on how to resolve the problem.
+   */
+  fix?: string;
+  /**
+   * Locations in user code that contributed to this diagnostic, in
+   * `file:line:column` format. Relevant when the stack trace doesn't reflect
+   * the user's source (e.g. compilers, bundlers), otherwise redundant with the
+   * stack and should be omitted.
+   */
+  sources?: string[];
+  /**
+   * Alias for {@link Error.message}: the reason this diagnostic was raised.
+   */
+  get why(): string;
+  /**
+   * @param init        structured initializer; `why` is required
+   * @param captureFrom V8 stack-cutoff frame. Defaults to {@link Diagnostic}
+   * so the top of the trace is the `new Diagnostic(...)` call site.
+   * `defineDiagnostics` passes its action method to strip its own frames too.
+   * Ignored on engines without `Error.captureStackTrace`.
+   */
+  constructor(init: DiagnosticInit, captureFrom?: Function);
+  /**
+   * Converts the diagnostic into a serializable structured object.
+   */
+  toJSON(): object;
+}
+/**
+ * Extracts the options object a reporter accepts as its 2nd argument. Returns
+ * `{}` when the reporter has no 2nd arg (so it contributes nothing to the
+ * merged shape).
+ */
+type ExtractSingleReporterOptions<Reporter> = Reporter extends ((diagnostic: Diagnostic, options: infer ReporterOpts) => any) ? IsUnknown<ReporterOpts> extends true ? {} : Exclude<ReporterOpts, undefined> : {};
+/**
+ * Intersects every reporter's options shape into a single object. If any
+ * reporter has a required field, the merged shape has a required field, and
+ * {@link ActionArgs} flips `reporterOptions` from optional to required via
+ * `{} extends Merged`.
+ */
+type ExtractReportersOptions<Reporters extends readonly any[]> = Reporters extends readonly [infer First, ...infer Rest] ? ExtractSingleReporterOptions<First> & ExtractReportersOptions<Rest> : {};
+//#endregion
+//#region src/node/diagnostics.d.ts
+/**
+ * `@devframes/json-render` protocol/runtime diagnostics share the `DF`
+ * prefix and use the next globally available core codes. Browser-only render
+ * failures keep `console.*` in the UI package.
+ */
+declare const diagnostics: Diagnostics<{
+  readonly DF0038: {
+    readonly why: (p: {
+      id: string;
+      key: string;
+      issues: string;
+    }) => string;
+    readonly fix: "Match the element props to the base catalog's prop schema for that component. See the component reference for the expected shape.";
+  };
+  readonly DF0039: {
+    readonly why: (p: {
+      id: string;
+      scope: string;
+    }) => string;
+    readonly fix: "Give each view a stable id unique within its scope, or dispose the previous view before recreating it.";
+  };
+  readonly DF0040: {
+    readonly why: (p: {
+      id: string;
+    }) => string;
+    readonly fix: "Create a fresh view with `createJsonRenderView` instead of reusing a disposed handle.";
+  };
+  readonly DF0041: {
+    readonly why: (p: {
+      id: string;
+      reason: string;
+    }) => string;
+    readonly fix: "Specs and state travel as strict JSON, so remove functions, symbols, class instances, Map/Set, or circular references.";
+  };
+  readonly DF0073: {
+    readonly why: (p: {
+      id: string;
+      issues: string;
+    }) => string;
+    readonly fix: "Match the authored spec to the Standard Schema passed to `createJsonRenderView`.";
+  };
+  readonly DF0074: {
+    readonly why: (p: {
+      id: string;
+    }) => string;
+    readonly fix: "Use a synchronous Standard Schema so initial creation and updates remain synchronous.";
+  };
+}, readonly [(d: Diagnostic, { method }?: {
+  method?: "log" | "warn" | "error";
+}) => void]>;
+//#endregion
+export { type CreateJsonRenderViewOptions, createJsonRenderView, diagnostics as jsonRenderDiagnostics };

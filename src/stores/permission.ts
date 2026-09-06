@@ -6,6 +6,7 @@ import { useUserStoreHook } from "@/stores/user";
 import { isExternal } from "@/utils";
 
 import MenuAPI from "@/api/system/menu";
+import { withUavMockMenu } from "../views/uav/mockMenu";
 import type { RouteItem } from "@/api/system/menu";
 const modules = import.meta.glob("../views/**/*.vue");
 const Layout = () => import("../layouts/index.vue");
@@ -21,7 +22,7 @@ export const usePermissionStore = defineStore("permission", () => {
   async function generateRoutes(): Promise<RouteRecordRaw[]> {
     try {
       const routeData = await MenuAPI.getRoutes();
-      const menuRoutes = transformRoutes(routeData);
+      const menuRoutes = transformRoutes(withUavMockMenu(routeData));
       const registerRoutes = filterRoutes(menuRoutes);
 
       routes.value = [...constantRoutes, ...menuRoutes];

@@ -1,0 +1,37 @@
+{
+  "name": "stylelint-config-recess-order",
+  "version": "7.8.0",
+  "requiresBuild": false,
+  "files": {
+    "groups.js": {
+      "checkedAt": 1788700674708,
+      "integrity": "sha512-DCPT7Lmwqx7O+eILbIhwK5DLJH1VByyYW94oC643ZEY8V31z5E2wHel9e+38qOhohNsMbGSb/gUfWrfu+CFPYA==",
+      "mode": 420,
+      "size": 18082
+    },
+    "index.js": {
+      "checkedAt": 1788700674709,
+      "integrity": "sha512-MKDt5UDie7UMDxUNLvQVGVJPlHAiIm/rU2ineXGC6c1lOYrNJDIp1s5aYS1RwD6A2Dvo1dtWHRuwB2V0Hnlymw==",
+      "mode": 420,
+      "size": 173
+    },
+    "package.json": {
+      "checkedAt": 1788700674710,
+      "integrity": "sha512-5aZ1i4PBrqNOr67Ue6VvTQzDhvuNHOMv8GWvnyzcvIg8lEgASvT54N095IbajnrgaFh0MWAZYXSAm1P0fo7ZTw==",
+      "mode": 420,
+      "size": 1647
+    },
+    "README.md": {
+      "checkedAt": 1788700674711,
+      "integrity": "sha512-NORLEicGLuETZ4kUxMm6g8cIZdf1B32bVHYYu0CeytTNb1qUYp//w9gUpqsCN610SWUqeMkqomWP1gw20JzWpw==",
+      "mode": 420,
+      "size": 2712
+    },
+    "LICENSE.txt": {
+      "checkedAt": 1788700674712,
+      "integrity": "sha512-mFlzMdRBpPlsAGjH0dXS1+JAyxVyrcG/w/Ujr6I2qImqs6zJxhXFfXc4Dk5VOFY8bIsrEhkIBveB73688T76sw==",
+      "mode": 420,
+      "size": 733
+    }
+  }
+}

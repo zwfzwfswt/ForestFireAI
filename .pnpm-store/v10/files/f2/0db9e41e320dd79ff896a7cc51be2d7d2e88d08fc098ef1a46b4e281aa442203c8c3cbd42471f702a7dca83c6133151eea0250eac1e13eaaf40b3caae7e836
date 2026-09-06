@@ -1,0 +1,143 @@
+import { defineRpcFunction } from "devframe";
+import { hash } from "devframe/utils/hash";
+import { s } from "devframe/utils/simple-schema";
+//#region package.json
+var version = "0.9.12";
+//#endregion
+//#region src/index.ts
+const SHIKI_SERVICE_PACKAGE = "@devframes/service-shiki";
+const SHIKI_SERVICE_SCOPE = "devframes:service:shiki";
+/** Defaults matching the `@antfu/design` light/dark surfaces. */
+const SHIKI_DEFAULT_THEMES = {
+	light: "vitesse-light",
+	dark: "vitesse-dark"
+};
+/** Tiny insertion-order LRU, enough to absorb re-renders of the same code. */
+var Lru = class {
+	max;
+	map = /* @__PURE__ */ new Map();
+	constructor(max) {
+		this.max = max;
+	}
+	get(key) {
+		const value = this.map.get(key);
+		if (value !== void 0) {
+			this.map.delete(key);
+			this.map.set(key, value);
+		}
+		return value;
+	}
+	set(key, value) {
+		if (this.map.size >= this.max && !this.map.has(key)) this.map.delete(this.map.keys().next().value);
+		this.map.set(key, value);
+	}
+};
+const inputSchema = s.object({
+	code: s.string(),
+	lang: s.optional(s.string()),
+	themes: s.optional(s.object({
+		light: s.string(),
+		dark: s.string()
+	}))
+});
+/**
+* The Shiki wire service: server-side syntax highlighting shared by every
+* plugin on the host, so client bundles stop shipping their own grammars and
+* themes. Shiki itself loads lazily on first use; results are LRU-cached per
+* `(code, lang, themes)` and every RPC function is `cacheable` on the client
+* side too.
+*/
+function createShikiService(options) {
+	return {
+		package: SHIKI_SERVICE_PACKAGE,
+		version,
+		scope: SHIKI_SERVICE_SCOPE,
+		options,
+		/**
+		* Option sets from multiple installers merge via devframe's default
+		* deep-merge: `langs` union, `themes` deep-merged (per-key last-wins).
+		*/
+		setup(ctx, { options }) {
+			const defaultThemes = options?.themes ?? SHIKI_DEFAULT_THEMES;
+			let shikiPromise;
+			const shiki = () => shikiPromise ??= import("shiki").then(async (mod) => {
+				if (options?.langs?.length) await mod.getSingletonHighlighter({
+					langs: options.langs.filter((lang) => lang in mod.bundledLanguages),
+					themes: [defaultThemes.light, defaultThemes.dark]
+				});
+				return mod;
+			});
+			/** Unknown language ids degrade to plain text instead of throwing. */
+			async function resolveLang(lang) {
+				if (!lang) return "text";
+				return lang in (await shiki()).bundledLanguages || [
+					"text",
+					"plaintext",
+					"txt",
+					"plain",
+					"ansi"
+				].includes(lang) ? lang : "text";
+			}
+			const cache = new Lru(256);
+			function cached(kind, input, compute) {
+				const themes = input.themes ?? defaultThemes;
+				const key = hash([
+					kind,
+					input.lang,
+					themes,
+					input.code
+				]);
+				let result = cache.get(key);
+				if (!result) {
+					result = resolveLang(input.lang).then((lang) => compute(lang, themes));
+					cache.set(key, result);
+				}
+				return result;
+			}
+			const api = {
+				highlight: (input) => cached("html", input, async (lang, themes) => ({ html: await (await shiki()).codeToHtml(input.code, {
+					lang,
+					themes: { ...themes }
+				}) })),
+				codeToHast: (input) => cached("hast", input, async (lang, themes) => (await shiki()).codeToHast(input.code, {
+					lang,
+					themes: { ...themes }
+				})),
+				codeToTokens: (input) => cached("tokens", input, async (lang, themes) => (await shiki()).codeToTokens(input.code, {
+					lang,
+					themes: { ...themes }
+				}))
+			};
+			ctx.rpc.register(defineRpcFunction({
+				name: "highlight",
+				type: "query",
+				cacheable: true,
+				jsonSerializable: true,
+				args: [inputSchema],
+				returns: s.object({ html: s.string() }),
+				handler: (input) => api.highlight(input)
+			}));
+			ctx.rpc.register(defineRpcFunction({
+				name: "code-to-hast",
+				type: "query",
+				cacheable: true,
+				jsonSerializable: true,
+				args: [inputSchema],
+				returns: s.object({}),
+				handler: (input) => api.codeToHast(input)
+			}));
+			ctx.rpc.register(defineRpcFunction({
+				name: "code-to-tokens",
+				type: "query",
+				cacheable: true,
+				jsonSerializable: true,
+				args: [inputSchema],
+				returns: s.object({}),
+				handler: (input) => api.codeToTokens(input)
+			}));
+			return api;
+		}
+	};
+}
+//#endregion
+export { SHIKI_DEFAULT_THEMES, SHIKI_SERVICE_PACKAGE, SHIKI_SERVICE_SCOPE, createShikiService, createShikiService as default };

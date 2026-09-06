@@ -8,6 +8,7 @@ import type { MapLayerRegistry } from "./layers/mapLayerRegistry";
 import { useMapDrawing } from "./composables/useMapDrawing";
 import { useBusinessLayers } from "./composables/useBusinessLayers";
 import { registerDrawingPanes } from "./layers/layerPanes";
+import { useUavMapLayer } from "./composables/useUavMapLayer";
 
 export function useForestMap(container: Ref<HTMLElement | null>) {
   const coordinate = ref<{ lat: number; lng: number } | null>(null);
@@ -18,6 +19,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
   const ready = ref(false);
   const drawing = useMapDrawing();
   const business = useBusinessLayers();
+  const uav = useUavMapLayer(() => drawing.mode.value !== null);
   let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
@@ -31,6 +33,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    uav.detach();
     business.detach();
     drawing.detach();
     observer?.disconnect();
@@ -68,7 +71,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
         registerDrawingPanes(map);
         layers = createMapLayerRegistry(map, () => L.layerGroup(), business.publish);
         const baseMap = layers.register("BaseMapLayer");
-        business.attach(layers, L);
+        business.attach(layers, L, { UAVLayer: uav.factory(L) });
         drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
         L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
@@ -105,6 +108,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
         observer = new ResizeObserver(resize);
         observer.observe(container.value);
         ready.value = true;
+        uav.attach(map, L, layers);
         resize();
         return map;
       } catch (cause) {

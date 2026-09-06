@@ -1,0 +1,25 @@
+{
+  "name": "@oxc-parser/binding-win32-x64-msvc",
+  "version": "0.131.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700704197,
+      "integrity": "sha512-SRDzDGP5pdlm5s5/flSZDyfIuH+OzMiIQog80q/84BjgdJgYvKKvmpsS6UudXoC9InhBy2xZoWbNZ9UxhK3jsA==",
+      "mode": 420,
+      "size": 820
+    },
+    "README.md": {
+      "checkedAt": 1788700704198,
+      "integrity": "sha512-mRVaL0t4ga3vKTTpP+yffeU1kBeAWrfkQQzKxtA5yAB9WhjdqHrFzit0u6RciJKkV9Sts+6WuMiryBivHUnikg==",
+      "mode": 420,
+      "size": 112
+    },
+    "parser.win32-x64-msvc.node": {
+      "checkedAt": 1788700704201,
+      "integrity": "sha512-PBY6pskrFyepq+rYXi71vLKjgw1/VrR669dItl2IV0jvE2+yGQa80qsE5TD/UR9poPGV5pG6tOSaPF02z1ayRQ==",
+      "mode": 420,
+      "size": 2018304
+    }
+  }
+}

@@ -11,7 +11,7 @@
         <small>数据快照：{{ dashboardSnapshot }}</small>
       </div>
     </header>
-    <DashboardStats :items="dashboardStats" />
+    <DashboardStats :items="stats" />
     <div class="command-center__main">
       <ForestFireMap />
       <DashboardAlerts :alerts="dashboardAlerts" />
@@ -24,6 +24,17 @@ import DashboardStats from "./components/DashboardStats.vue";
 import ForestFireMap from "./components/map/ForestFireMap.vue";
 import DashboardAlerts from "./components/DashboardAlerts.vue";
 import { dashboardAlerts, dashboardSnapshot, dashboardStats } from "./mock";
+import { computed } from "vue";
+import { useUavStore } from "../../stores/uav";
+const uavs = useUavStore();
+const stats = computed(() => [
+  {
+    ...dashboardStats[0],
+    value: uavs.list.filter((uav) => uav.status === "online").length,
+    note: `资产总数 ${uavs.list.length} 架 · 仅统计 online 状态（Mock）`,
+  },
+  ...dashboardStats.slice(1),
+]);
 defineOptions({ name: "Dashboard", inheritAttrs: false });
 </script>
 

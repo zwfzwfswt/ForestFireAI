@@ -1,0 +1,84 @@
+{
+  "name": "stylelint-config-html",
+  "version": "2.0.0",
+  "description": "The shareable HTML config for Stylelint.",
+  "keywords": [
+    "stylelint",
+    "stylelint-config",
+    "html",
+    "vue",
+    "svelte",
+    "php",
+    "xml"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./html": "./html.js",
+    "./html.js": "./html.js",
+    "./vue": "./vue.js",
+    "./vue.js": "./vue.js",
+    "./svelte": "./svelte.js",
+    "./svelte.js": "./svelte.js",
+    "./astro": "./astro.js",
+    "./astro.js": "./astro.js",
+    "./php": "./php.js",
+    "./php.js": "./php.js",
+    "./xml": "./xml.js",
+    "./xml.js": "./xml.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "html.js",
+    "vue.js",
+    "svelte.js",
+    "astro.js",
+    "php.js",
+    "xml.js"
+  ],
+  "engines": {
+    "node": "^22.12 || >=24"
+  },
+  "scripts": {
+    "test": "mocha \"tests/lib/**/*.js\" --reporter dot --timeout 60000",
+    "lint": "eslint .",
+    "eslint-fix": "eslint . --fix",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish"
+  },
+  "peerDependencies": {
+    "postcss-html": "^2.0.0",
+    "stylelint": ">=16.0.0"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.1",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.3.0",
+    "@ota-meshi/eslint-plugin": "^0.20.0",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-jsdoc": "^63.3.2",
+    "eslint-plugin-json-schema-validator": "^6.0.0",
+    "eslint-plugin-jsonc": "^3.0.0",
+    "eslint-plugin-n": "^18.0.0",
+    "eslint-plugin-node-dependencies": "^2.2.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "eslint-plugin-regexp": "^3.0.0",
+    "eslint-plugin-yml": "^3.0.0",
+    "mocha": "^11.0.0",
+    "prettier": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ota-meshi/stylelint-config-html.git"
+  },
+  "author": "Yosuke Ota (https://github.com/ota-meshi)",
+  "funding": "https://github.com/sponsors/ota-meshi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ota-meshi/stylelint-config-html/issues"
+  },
+  "homepage": "https://github.com/ota-meshi/stylelint-config-html#readme"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@unocss/rollup",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700694157,
+      "integrity": "sha512-gqBhIdmzdntqI0in2XHYmbr3WMTqCwvtxbP6Y3K2obbycascVceWAyawliT2kuES6AYuEtSU9aWXTPdmv8H1OA==",
+      "mode": 420,
+      "size": 1528
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700694158,
+      "integrity": "sha512-HQJD9BUUGuSKrsxjAkZUbcMNZftLgydWIrFqo37oraLZCUQujHFMJzyCOla41TPUJAu29CTtm3e7YA9ypZ17/A==",
+      "mode": 420,
+      "size": 12100
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700694159,
+      "integrity": "sha512-AvNs8ZuL2GwMW4PFzma7XbKMaPCZyKw6HyM5RB95YgXVCVFAEJQmfh1Vel1ixdO97FylMeEau+Jq4Yl1gXy4FA==",
+      "mode": 420,
+      "size": 773
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@rolldown/binding-win32-x64-msvc",
+  "version": "1.2.7",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700709389,
+      "integrity": "sha512-vuIpPlCKCbvu8Jn6s7Azib63dKHwlblSsmI6AhPUMMI26TO9HHAa7S6AVDxfwhkxcJErMdolztZwkIFwFxYCjA==",
+      "mode": 420,
+      "size": 782
+    },
+    "README.md": {
+      "checkedAt": 1788700709390,
+      "integrity": "sha512-TvNiqzCBSwhtgP2szzGuVnJl/qWQEZJeUGL+Rj+hQHgnxx3UH+l2NC6OzKGy+BMIz6u1S+Y/s/OrR/9brUBJ+g==",
+      "mode": 420,
+      "size": 108
+    },
+    "rolldown-binding.win32-x64-msvc.node": {
+      "checkedAt": 1788700709420,
+      "integrity": "sha512-1E+er/hQZQot8Z0LQd1ayNrdTf0dwp6RMBuekKhVRwoSXkjtViYdPqz1B3zt4NmNgzDeXyQ3NmDWl1QMGSNOaw==",
+      "mode": 420,
+      "size": 20875776
+    }
+  }
+}

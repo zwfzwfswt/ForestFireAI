@@ -1,0 +1,5 @@
+import { r as containerShortcuts } from "./container-1T5nmRC3.mjs";
+//#region src/shortcuts/index.ts
+const shortcuts = [...containerShortcuts];
+//#endregion
+export { shortcuts };

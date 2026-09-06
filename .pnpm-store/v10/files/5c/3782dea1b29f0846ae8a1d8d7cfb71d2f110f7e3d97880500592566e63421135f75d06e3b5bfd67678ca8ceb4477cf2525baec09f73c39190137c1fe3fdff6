@@ -1,0 +1,1159 @@
+import { createRequire } from "node:module";
+import process from "node:process";
+import { LRUCache, attempt, attemptAsync, deepEqual, findFirstThen, hasOwn, isArray, isBoolean, isEmptyObject, isFunction, isNil, isPlainObject, isPrimitive, isString, kebabCase, objectKeys, omit, partition, random, remove, sleep, sortBy, timestamp, toArray, uniq } from "@pengzhanbo/utils";
+import picomatch from "picomatch";
+import { match, parse, pathToRegexp } from "path-to-regexp";
+import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+import os from "node:os";
+import path from "node:path";
+import { createDebug } from "obug";
+import { parse as parse$1 } from "node:querystring";
+import ansis from "ansis";
+import fs, { promises } from "node:fs";
+import cors from "cors";
+import { PassThrough } from "node:stream";
+import bodyParser from "co-body";
+import formidable from "formidable";
+import Cookies from "cookies";
+import zlib from "node:zlib";
+import HTTP_STATUS from "http-status";
+import * as mime from "mime-types";
+import { WebSocketServer } from "ws";
+
+
+function createMatcher(include, exclude) {
+	const pattern = [];
+	const ignore = ["**/node_modules/**", ...toArray(exclude)];
+	toArray(include).forEach((item) => {
+		if (item[0] === "!") ignore.push(item.slice(1));
+		else pattern.push(item);
+	});
+	return {
+		pattern,
+		ignore,
+		isMatch: picomatch(pattern, { ignore })
+	};
+}
+
+
+const PATTERN_CACHE = new LRUCache({ maxSize: 100 });
+function doesProxyContextMatchUrl(context, url) {
+	if (context[0] === "^") {
+		let pattern = PATTERN_CACHE.get(context);
+		if (!pattern) PATTERN_CACHE.set(context, pattern = new RegExp(context));
+		return pattern.test(url);
+	}
+	return url.startsWith(context);
+}
+
+
+function isStream(stream) {
+	return stream !== null && typeof stream === "object" && typeof stream.pipe === "function";
+}
+function isReadableStream(stream) {
+	return isStream(stream) && stream.readable !== false && typeof stream._read === "function" && typeof stream._readableState === "object";
+}
+const PACKAGE_CACHE = new LRUCache({ maxSize: 1024 });
+const require = createRequire(process.cwd());
+function isPackageExists(mod) {
+	if (PACKAGE_CACHE.has(mod)) return PACKAGE_CACHE.get(mod);
+	let isExists = false;
+	try {
+		if (import.meta.resolve) isExists = !!import.meta.resolve(mod);
+		else {
+			require.resolve(mod);
+			isExists = true;
+		}
+	} catch {}
+	PACKAGE_CACHE.set(mod, isExists);
+	return isExists;
+}
+
+function isTextContent(contentType) {
+	return [
+		"text",
+		"json",
+		"xml"
+	].some((type) => contentType.includes(type));
+}
+
+
+
+function isObjectSubset(source, target) {
+	if (!target) return true;
+	for (const key in target) if (!isIncluded(source[key], target[key])) return false;
+	return true;
+}
+function isIncluded(source, target) {
+	if (isArray(source) && isArray(target)) {
+		const seen =  new Set();
+		return target.every((ti) => source.some((si, i) => {
+			if (seen.has(i)) return false;
+			const included = isIncluded(si, ti);
+			if (included) seen.add(i);
+			return included;
+		}));
+	}
+	if (isPlainObject(source) && isPlainObject(target)) return isObjectSubset(source, target);
+	return Object.is(source, target);
+}
+
+
+const cache$1 =  new Map();
+
+function isPathMatch(pattern, path) {
+	let regexp = cache$1.get(pattern);
+	if (!regexp) {
+		regexp = pathToRegexp(pattern).regexp;
+		cache$1.set(pattern, regexp);
+	}
+	return regexp.test(path);
+}
+
+
+function matchScene(activeScene, mockScene) {
+	if (!mockScene) return true;
+	const scenes = toArray(mockScene);
+	if (activeScene.length === 0 && scenes.length > 0) return false;
+	if (scenes.length === 0) return true;
+	return scenes.some((s) => activeScene.includes(s));
+}
+
+
+const debug = createDebug("vite:mock", { useColors: true });
+const windowsSlashRE = /\\/g;
+const isWindows = os.platform() === "win32";
+function slash(p) {
+	return p.replace(windowsSlashRE, "/");
+}
+function normalizePath(id) {
+	return path.posix.normalize(isWindows ? slash(id) : id);
+}
+function getHash(str) {
+	if (isPrimitive(str)) str = String(str);
+	else str = JSON.stringify(str);
+	return createHash("md5").update(Buffer.from(str)).digest("hex");
+}
+
+
+
+function urlParse(input) {
+	try {
+		const url = new URL(input, "http://example.com");
+		return {
+			pathname: decodeURIComponent(url.pathname),
+			query: parse$1(url.search.replace(/^\?/, ""))
+		};
+	} catch {
+		console.error(`${ansis.red("[vite:mock]")} Failed to parse URL, input: ${ansis.yellow.underline(input)}`);
+		return {
+			pathname: "",
+			query: {}
+		};
+	}
+}
+
+
+function processRawData(raw, __filepath__) {
+	let res;
+	if (isArray(raw)) res = raw.map((item) => ({
+		...item,
+		__filepath__
+	}));
+	else if ("url" in raw) res = {
+		...raw,
+		__filepath__
+	};
+	else {
+		res = [];
+		objectKeys(raw).forEach((key) => {
+			const data = raw[key];
+			if (isArray(data)) res.push(...data.map((item) => ({
+				...item,
+				__filepath__
+			})));
+			else res.push({
+				...data,
+				__filepath__
+			});
+		});
+	}
+	return res;
+}
+function processMockData(mockList) {
+	const list = [];
+	for (const [, handle] of mockList.entries()) if (handle) list.push(...toArray(handle));
+	const mocks = {};
+	list.filter((mock) => isPlainObject(mock) && mock.enabled !== false && mock.url).forEach((mock) => {
+		const { pathname, query } = urlParse(mock.url);
+		const list = mocks[pathname] ??= [];
+		const current = {
+			...mock,
+			url: pathname
+		};
+		if (current.ws !== true) {
+			const validator = current.validator;
+			if (!isEmptyObject(query)) if (isFunction(validator)) current.validator = function(request) {
+				return isObjectSubset(request.query, query) && validator(request);
+			};
+			else if (validator) {
+				current.validator = { ...validator };
+				current.validator.query = current.validator.query ? {
+					...query,
+					...current.validator.query
+				} : query;
+			} else current.validator = { query };
+		}
+		list.push(current);
+	});
+	objectKeys(mocks).forEach((key) => {
+		mocks[key] = sortByValidator(mocks[key]);
+	});
+	return mocks;
+}
+function sortByValidator(mocks) {
+	return sortBy(mocks, (item) => {
+		if (item.ws === true) return 0;
+		const baseWeight = toArray(item.scene).length > 0 ? 0 : 1;
+		const { validator } = item;
+		if (!validator || isEmptyObject(validator)) return 2 + baseWeight;
+		if (isFunction(validator)) return 0 + baseWeight;
+		return 1 / Object.keys(validator).reduce((prev, key) => prev + keysCount(validator[key]), 0) + baseWeight;
+	});
+}
+function keysCount(obj) {
+	if (!obj) return 0;
+	return objectKeys(obj).length;
+}
+
+
+
+function createCors(corsOptions) {
+	const corsMiddleware = corsOptions ? cors(corsOptions) : void 0;
+	return corsMiddleware ? (req, res) => new Promise((resolve, reject) => corsMiddleware(req, res, (err) => {
+		err ? reject(err) : resolve();
+	})) : void 0;
+}
+
+
+
+async function parseRequestBody(req, logger, formidableOptions, bodyParserOptions = {}) {
+	const method = req.method.toUpperCase();
+	if (["HEAD", "OPTIONS"].includes(method)) return void 0;
+	const type = req.headers["content-type"]?.toLocaleLowerCase() || "";
+	const { limit, formLimit, jsonLimit, textLimit, ...rest } = bodyParserOptions;
+	try {
+		if (type.startsWith("application/json")) return await bodyParser.json(req, {
+			limit: jsonLimit || limit,
+			...rest
+		});
+		if (type.startsWith("application/x-www-form-urlencoded")) return await bodyParser.form(req, {
+			limit: formLimit || limit,
+			...rest
+		});
+		if (type.startsWith("text/plain")) return await bodyParser.text(req, {
+			limit: textLimit || limit,
+			...rest
+		});
+		if (type.startsWith("multipart/form-data")) return await parseRequestBodyWithMultipart(req, formidableOptions);
+	} catch (e) {
+		logger.error(e);
+	}
+}
+
+async function parseRequestBodyWithRaw(req, logger, formidableOptions, bodyParserOptions = {}) {
+	const method = req.method.toUpperCase();
+	if (["HEAD", "OPTIONS"].includes(method)) return { body: void 0 };
+	const contentType = req.headers["content-type"];
+	const contentLength = req.headers["content-length"];
+	const transferEncoding = req.headers["transfer-encoding"];
+	if (!contentType && !contentLength && !transferEncoding) return { body: void 0 };
+	const rawBody = await readRequestBody(req);
+	if (!rawBody.byteLength) return {
+		body: void 0,
+		rawBody
+	};
+	return {
+		body: await parseRequestBody(createRequestStream(req, rawBody), logger, formidableOptions, bodyParserOptions),
+		rawBody
+	};
+}
+function readRequestBody(req) {
+	return new Promise((resolve, reject) => {
+		const chunks = [];
+		req.on("error", reject);
+		req.on("end", () => {
+			resolve(chunks.length ? Buffer.concat(chunks) : Buffer.alloc(0));
+		});
+		req.on("data", (chunk) => {
+			chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+		});
+	});
+}
+function createRequestStream(req, rawBody) {
+	const stream = new PassThrough();
+	Object.assign(stream, {
+		headers: req.headers,
+		method: req.method,
+		url: req.url,
+		socket: req.socket
+	});
+	stream.end(rawBody);
+	return stream;
+}
+
+const DEFAULT_FORMIDABLE_OPTIONS = {
+	keepExtensions: true,
+	filename(name, ext, part) {
+		return part?.originalFilename || `${name}.${Date.now()}${ext ? `.${ext}` : ""}`;
+	}
+};
+
+async function parseRequestBodyWithMultipart(req, options) {
+	const form = formidable({
+		...DEFAULT_FORMIDABLE_OPTIONS,
+		...options
+	});
+	return new Promise((resolve, reject) => {
+		form.parse(req, (error, fields, files) => {
+			if (error) {
+				reject(error);
+				return;
+			}
+			resolve({
+				...fields,
+				...files
+			});
+		});
+	});
+}
+
+const matcherCache =  new Map();
+
+function parseRequestParams(pattern, url) {
+	let matcher = matcherCache.get(pattern);
+	if (!matcher) {
+		matcher = match(pattern, { decode: decodeURIComponent });
+		matcherCache.set(pattern, matcher);
+	}
+	const matched = matcher(url);
+	return matched ? matched.params : {};
+}
+
+function requestValidate(request, validator) {
+	return isObjectSubset(request.headers, validator.headers) && isObjectSubset(request.body, validator.body) && isObjectSubset(request.params, validator.params) && isObjectSubset(request.query, validator.query) && isObjectSubset(request.refererQuery, validator.refererQuery);
+}
+
+function formatLog(prefix, data) {
+	return !data || isEmptyObject(data) ? "" : `  ${ansis.gray(`${prefix}:`)}${JSON.stringify(data)}`;
+}
+
+function requestLog(request, filepath, shouldSimulateError) {
+	const { url, method, query, params, body } = request;
+	let { pathname } = new URL(url, "http://example.com");
+	pathname = ansis.green(decodeURIComponent(pathname));
+	const ms = ansis.magenta.bold(method);
+	const qs = formatLog("query", query);
+	const ps = formatLog("params", params);
+	const bs = formatLog("body", body);
+	const es = shouldSimulateError ? ` 🎲 ${ansis.bgYellow("ERR")}` : "";
+	const file = `  ${ansis.dim.underline(`(${filepath})`)}`;
+	return `${ms}${es} ${pathname}${qs}${ps}${bs}${file}`;
+}
+
+
+
+function findMockData(mockList, logger, { pathname, method, request, activeScene }) {
+	return mockList.find((mock) => {
+		if (!pathname || !mock || !mock.url || mock.ws) return false;
+		if (!(mock.method ? isArray(mock.method) ? mock.method : [mock.method] : ["GET", "POST"]).includes(method)) return false;
+		if (!matchScene(activeScene, mock.scene)) return false;
+		const hasMock = isPathMatch(mock.url, pathname);
+		if (hasMock && mock.validator) {
+			const params = parseRequestParams(mock.url, pathname);
+			if (isFunction(mock.validator)) return mock.validator({
+				params,
+				...request
+			});
+			else {
+				const [error, validated] = attempt(requestValidate, {
+					params,
+					...request
+				}, mock.validator);
+				if (error) {
+					const file = mock.__filepath__;
+					logger.error(`${ansis.red(`mock error at ${pathname}`)}\n${error}\n  at validator (${ansis.underline(file)})`, mock.log);
+					return false;
+				}
+				return validated;
+			}
+		}
+		return hasMock;
+	});
+}
+
+
+const tokensCache = {};
+function getTokens(rule) {
+	if (tokensCache[rule]) return tokensCache[rule];
+	const res = [];
+	const flatten = (tokens, group = false) => {
+		for (const token of tokens) if (token.type === "text") {
+			const sub = token.value.split("/").filter(Boolean);
+			sub.length && res.push(...sub.map((v) => ({
+				type: "text",
+				value: v
+			})));
+		} else if (token.type === "group") flatten(token.tokens, true);
+		else {
+			if (group) token.optional = true;
+			res.push(token);
+		}
+	};
+	flatten(parse(rule).tokens);
+	tokensCache[rule] = res;
+	return res;
+}
+function getHighest(rules) {
+	let weights = rules.map((rule) => getTokens(rule).length);
+	weights = weights.length === 0 ? [1] : weights;
+	return Math.max(...weights) + 2;
+}
+function computedWeight(rule, highest) {
+	const tokens = getTokens(rule);
+	const dym = tokens.filter((token) => token.type !== "text");
+	if (dym.length === 0) return 0;
+	let weight = dym.length;
+	let exp = 0;
+	for (let i = 0; i < tokens.length; i++) {
+		const token = tokens[i];
+		const isDynamic = token.type !== "text";
+		const isWildcard = token.type === "wildcard";
+		const isOptional = !!token.optional;
+		exp += isDynamic ? 1 : 0;
+		if (i === tokens.length - 1 && isWildcard) weight += (isOptional ? 5 : 4) * 10 ** (tokens.length === 1 ? highest + 1 : highest);
+		else {
+			if (isWildcard) weight += 3 * 10 ** (highest - 1);
+			else weight += 2 * 10 ** exp;
+			if (isOptional) weight += 10 ** exp;
+		}
+	}
+	return weight;
+}
+function defaultPriority(rules) {
+	const highest = getHighest(rules);
+	return rules.sort((a, b) => computedWeight(a, highest) - computedWeight(b, highest));
+}
+
+function matchingWeight(rules, url, priority) {
+	let matched = defaultPriority(rules.filter((rule) => isPathMatch(rule, url)));
+	const { global = [], special = {} } = priority;
+	if (global.length === 0 && isEmptyObject(special) || matched.length === 0) return matched;
+	const [dynamics, statics] = partition(matched, (rule) => getTokens(rule).filter((token) => token.type !== "text").length > 0);
+	const globalMatch = global.filter((rule) => dynamics.includes(rule));
+	if (globalMatch.length > 0) matched = uniq([
+		...statics,
+		...globalMatch,
+		...dynamics
+	]);
+	if (isEmptyObject(special)) return matched;
+	const specialRule = Object.keys(special).filter((rule) => matched.includes(rule))[0];
+	if (!specialRule) return matched;
+	const options = special[specialRule];
+	const { rules: lowerRules, when } = isArray(options) ? {
+		rules: options,
+		when: []
+	} : options;
+	if (lowerRules.includes(matched[0])) {
+		if (when.length === 0 || when.some((path) => pathToRegexp(path).regexp.test(url))) matched = uniq([specialRule, ...matched]);
+	}
+	return matched;
+}
+
+
+const FILTERED_RESPONSE_HEADERS = [
+	"date",
+	"expires",
+	"last-modified",
+	"server",
+	"x-powered-by",
+	"x-aspnet-version",
+	"x-nginx-version",
+	"via",
+	"cache-control",
+	"etag",
+	"age",
+	"connection",
+	"keep-alive",
+	"proxy-authenticate",
+	"proxy-authorization",
+	"proxy-connection",
+	"trailer",
+	"access-control-allow-origin",
+	"access-control-allow-credentials",
+	"access-control-allow-methods",
+	"access-control-allow-headers",
+	"access-control-expose-headers",
+	"access-control-max-age",
+	"origin",
+	"p3p",
+	"pragma",
+	"x-request-id",
+	"x-correlation-id",
+	"x-trace-id",
+	"x-varnish",
+	"x-cache",
+	"x-cache-hits",
+	"x-cache-status",
+	"cf-cache-status",
+	"cf-ray",
+	"cf-request-id",
+	"server-timing",
+	"x-dns-prefetch-control"
+];
+
+
+
+async function decompressBody(rawBody, encoding) {
+	try {
+		switch (encoding.toLowerCase()) {
+			case "gzip":
+			case "x-gzip": return {
+				body: await gunzip(rawBody),
+				encoding: "identity"
+			};
+			case "deflate":
+			case "x-deflate": return {
+				body: await deflate(rawBody),
+				encoding: "identity"
+			};
+			case "br": return {
+				body: await brotli(rawBody),
+				encoding: "identity"
+			};
+			case "zstd": return {
+				body: await zstd(rawBody),
+				encoding: "identity"
+			};
+		}
+	} catch {}
+	return {
+		body: rawBody,
+		encoding
+	};
+}
+let zstdStreaming = null;
+
+async function zstd(rawBody) {
+	if (zlib.zstdDecompress) return new Promise((resolve, reject) => {
+		zlib.zstdDecompress(rawBody, (err, data) => {
+			err ? reject(err) : resolve(data);
+		});
+	});
+	if (!zstdStreaming) {
+		const { ZstdCodec } = await import("zstd-codec");
+		zstdStreaming = await new Promise((resolve) => {
+			ZstdCodec.run((binding) => {
+				resolve(new binding.Streaming());
+			});
+		});
+	}
+	return zstdStreaming.decompress(rawBody, rawBody.length);
+}
+
+async function brotli(rawBody) {
+	return new Promise((resolve, reject) => {
+		zlib.brotliDecompress(rawBody, (err, data) => {
+			err ? reject(err) : resolve(data);
+		});
+	});
+}
+async function gunzip(rawBody) {
+	return new Promise((resolve, reject) => {
+		zlib.gunzip(rawBody, (err, data) => {
+			err ? reject(err) : resolve(data);
+		});
+	});
+}
+async function deflate(rawBody) {
+	return new Promise((resolve, reject) => {
+		zlib.inflate(rawBody, (err, data) => {
+			err ? reject(err) : resolve(data);
+		});
+	});
+}
+
+
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+	year: "numeric",
+	month: "numeric",
+	day: "numeric",
+	hour: "numeric",
+	minute: "numeric",
+	second: "numeric",
+	hour12: false
+});
+
+function processRecordReq(req, pathname, body) {
+	const { query } = urlParse(req.url);
+	const method = req.method.toUpperCase();
+	let bodyType = (req.headers["content-type"] || "").split(";")[0].trim();
+	if (bodyType.startsWith("multipart/form-data") && isPlainObject(body)) {
+		body = { ...body };
+		objectKeys(body).forEach((key) => {
+			const value = body[key];
+			if (isPlainObject(value) && hasOwn(value, "filepath") && hasOwn(value, "mimetype")) delete body[key];
+		});
+	}
+	if (Buffer.isBuffer(body)) {
+		body = body.toString();
+		bodyType = "buffer";
+	}
+	return {
+		method,
+		pathname,
+		query,
+		bodyType,
+		body
+	};
+}
+
+async function processRecordRes(res, body) {
+	const status = res.statusCode || 200;
+	const statusText = res.statusMessage || "OK";
+	const headers = {};
+	for (const [key, value] of Object.entries(res.headers)) {
+		const lowerKey = key.toLowerCase();
+		if (value !== void 0 && !FILTERED_RESPONSE_HEADERS.includes(lowerKey)) headers[key] = String(value);
+	}
+	const isText = isTextContent(headers["content-type"] || "");
+	if (isText) {
+		const { body: decodedBody, encoding } = await decompressBody(body, headers["content-encoding"] || "");
+		body = Buffer.from(decodedBody);
+		headers["content-encoding"] = encoding;
+	}
+	return {
+		status,
+		statusText,
+		headers,
+		body: body.toString(isText ? "utf-8" : "base64")
+	};
+}
+
+function isSameRecord(prev, current) {
+	if (prev.pathname !== current.pathname || prev.method !== current.method) return false;
+	if (prev.bodyType !== current.bodyType) return false;
+	if (!deepEqual(prev.query, current.query)) return false;
+	if (current.bodyType === "buffer" && prev.bodyType === "buffer") {
+		const currentBody = Buffer.from(current.body);
+		const prevBody = Buffer.from(prev.body);
+		if (currentBody.length !== prevBody.length || !currentBody.equals(prevBody)) return false;
+	}
+	if (!deepEqual(prev.body, current.body)) return false;
+	return true;
+}
+
+function createRecordMatcher(filter) {
+	if (isFunction(filter)) return filter;
+	const { mode = "glob" } = filter;
+	const include = toArray(filter.include);
+	const exclude = toArray(filter.exclude);
+	if (mode === "glob") {
+		const { isMatch } = createMatcher(include, exclude);
+		return (req) => isMatch(req.pathname);
+	}
+	return (req) => {
+		return include.some((pattern) => isPathMatch(pattern, req.pathname)) && exclude.every((pattern) => !isPathMatch(pattern, req.pathname));
+	};
+}
+
+function getFilepath(pathname, dir) {
+	return path.join(dir, `${kebabCase(pathname)}.json`);
+}
+
+
+const storage =  new Map();
+
+async function readRecordStorage(filepath) {
+	if (storage.has(filepath)) return storage.get(filepath);
+	try {
+		if (!fs.existsSync(filepath)) return [];
+		const content = await fs.promises.readFile(filepath, "utf-8") || "[]";
+		const data = JSON.parse(content);
+		storage.set(filepath, data);
+		return data;
+	} catch (error) {
+		console.error(`Error reading record file ${filepath}:`, error);
+		return [];
+	}
+}
+
+async function writeRecordStorage(filepath, records) {
+	try {
+		storage.set(filepath, records);
+		await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
+		await fs.promises.writeFile(filepath, JSON.stringify(records, null, 2), "utf-8");
+	} catch (error) {
+		console.error(`Error writing record file ${filepath}:`, error);
+	}
+}
+const originalReqCache =  new WeakMap();
+
+function recordRequestWithRawReq(req, pathname, body) {
+	originalReqCache.set(req, {
+		body,
+		pathname,
+		timestamp: Date.now()
+	});
+}
+
+
+
+var Recorder = class {
+	options;
+	filter;
+	constructor(options) {
+		this.options = options;
+		this.filter = createRecordMatcher(options.filter);
+	}
+	setup(config) {
+		const options = this.options;
+		if (!config.server || !options.enabled) return;
+		const recordRequest = this.record.bind(this);
+		const proxies = config.server.proxy || {};
+		objectKeys(proxies).forEach((key) => {
+			const target = proxies[key];
+			const proxy = typeof target === "string" ? { target } : target;
+			if (proxy.ws) return;
+			const { configure, ...rest } = proxy;
+			proxies[key] = {
+				...rest,
+				configure(proxy, _) {
+					configure?.call(this, proxy, _);
+					proxy.on("proxyRes", (proxyRes, req) => {
+						let chunks = [];
+						proxyRes.on("data", (chunk) => chunk && chunks.push(chunk));
+						proxyRes.on("end", () => {
+							recordRequest(req, proxyRes, Buffer.concat(chunks));
+							chunks = null;
+						});
+					});
+				}
+			};
+		});
+		this.addGitignore();
+	}
+	async record(req, res, resBody) {
+		if (!originalReqCache.has(req)) return;
+		const { body, pathname, timestamp } = originalReqCache.get(req);
+		originalReqCache.delete(req);
+		if (!pathname) return;
+		const recordReq = processRecordReq(req, pathname, body);
+		if (!this.filter(recordReq)) return;
+		const { cwd, dir, status, expires, overwrite } = this.options;
+		if (status.length !== 0 && !status.includes(res.statusCode || 200)) return;
+		const record = {
+			meta: {
+				timestamp,
+				filepath: "",
+				createAt: timeFormatter.format(timestamp),
+				referer: req.headers.referer || "unknown"
+			},
+			req: recordReq,
+			res: await processRecordRes(res, resBody)
+		};
+		const filepath = getFilepath(pathname, dir);
+		record.meta.filepath = filepath;
+		const absoluteFilepath = path.join(cwd, filepath);
+		const records = (await readRecordStorage(absoluteFilepath)).filter((item) => timestamp - item.meta.timestamp <= expires);
+		const index = records.findIndex((item) => isSameRecord(item.req, record.req) && item.res.status === record.res.status);
+		if (index === -1) records.push(record);
+		else if (overwrite || timestamp - records[index].meta.timestamp > expires) records[index] = record;
+		await writeRecordStorage(absoluteFilepath, records);
+	}
+	async addGitignore() {
+		const options = this.options;
+		if (!options.gitignore) return;
+		const dirname = path.join(options.cwd, options.dir);
+		await promises.mkdir(dirname, { recursive: true });
+		if (!fs.existsSync(path.join(dirname, ".gitignore"))) await promises.writeFile(path.join(dirname, ".gitignore"), "*\n", "utf-8");
+	}
+};
+
+
+
+async function replayRecordedRequest(rawReq, pathname, body, options) {
+	const req = processRecordReq(rawReq, pathname, body);
+	const filepath = path.join(options.cwd, getFilepath(req.pathname, options.dir));
+	const timestamp = Date.now();
+	const matchedList = (await readRecordStorage(filepath)).filter((item) => timestamp - item.meta.timestamp < options.expires && isSameRecord(item.req, req));
+	let matched;
+	if (options.status.length === 0) matched = matchedList.find((item) => item.res.status === 200) || matchedList[0];
+	else matched = matchedList.find((item) => options.status.includes(item.res.status));
+	if (matched) {
+		const isText = isTextContent(matched.res.headers["content-type"] || "");
+		return {
+			url: matched.req.pathname,
+			status: matched.res.status,
+			statusText: matched.res.statusText,
+			headers: matched.res.headers,
+			body: Buffer.from(matched.res.body, isText ? "utf-8" : "base64"),
+			type: "buffer",
+			__filepath__: matched.meta.filepath
+		};
+	}
+}
+
+
+const cache =  new WeakMap();
+
+function cacheRequestBody(req, body) {
+	if (body?.byteLength) cache.set(req, body);
+}
+
+function recoverRequest(config) {
+	if (!config.server) return;
+	const proxies = config.server.proxy || {};
+	objectKeys(proxies).forEach((key) => {
+		const target = proxies[key];
+		const options = isString(target) ? { target } : target;
+		if (options.ws) return;
+		const { configure, ...rest } = options;
+		proxies[key] = {
+			...rest,
+			configure(proxy, options) {
+				configure?.(proxy, options);
+				proxy.on("proxyReq", (proxyReq, req) => {
+					const buffer = cache.get(req);
+					if (buffer) {
+						cache.delete(req);
+						
+						if (!proxyReq.headersSent) proxyReq.setHeader("Content-Length", buffer.byteLength);
+						if (!proxyReq.writableEnded) proxyReq.write(buffer);
+					}
+				});
+			}
+		};
+	});
+}
+
+
+
+function getHTTPStatusText(status) {
+	return HTTP_STATUS[status] || "Unknown";
+}
+
+function provideResponseStatus(response, status = 200, statusText) {
+	response.statusCode = status;
+	response.statusMessage = statusText || getHTTPStatusText(status);
+}
+
+async function provideResponseHeaders(req, res, mock, logger) {
+	const { headers, type = "json" } = mock;
+	const filepath = mock.__filepath__;
+	const contentType = mime.contentType(type) || mime.contentType(mime.lookup(type) || "");
+	if (contentType) res.setHeader("Content-Type", contentType);
+	res.setHeader("Cache-Control", "no-cache,max-age=0");
+	res.setHeader("X-Mock-Power-By", "vite-plugin-mock-dev-server");
+	if (filepath) res.setHeader("X-File-Path", filepath);
+	if (!headers) return;
+	const [error, data] = await attemptAsync(async () => isFunction(headers) ? await headers(req) : headers);
+	if (error) {
+		logger.error(`${ansis.red(`mock error at ${req.url.split("?")[0]}`)}\n${error}\n  at headers (${ansis.underline(filepath)})`, mock.log);
+		return;
+	}
+	objectKeys(data).forEach((key) => res.setHeader(key, data[key]));
+}
+
+async function provideResponseCookies(req, res, mock, logger) {
+	const { cookies } = mock;
+	if (!cookies) return;
+	const [error, data] = await attemptAsync(async () => isFunction(cookies) ? await cookies(req) : cookies);
+	if (error) {
+		const filepath = mock.__filepath__;
+		logger.error(`${ansis.red(`mock error at ${req.url.split("?")[0]}`)}\n${error}\n  at cookies (${ansis.underline(filepath)})`, mock.log);
+		return;
+	}
+	objectKeys(data).forEach((key) => {
+		const cookie = data[key];
+		const [value, options] = isArray(cookie) ? cookie : [cookie];
+		res.setCookie(key, value, options);
+	});
+}
+
+function sendResponseData(res, raw, type) {
+	if (isReadableStream(raw)) raw.pipe(res);
+	else if (Buffer.isBuffer(raw)) res.end(type === "text" || type === "json" ? raw.toString("utf-8") : raw);
+	else {
+		const content = typeof raw === "string" ? raw : JSON.stringify(raw);
+		res.end(type === "buffer" ? Buffer.from(content) : content);
+	}
+}
+
+async function responseRealDelay(startTime, delay) {
+	if (!delay || typeof delay === "number" && delay <= 0 || isArray(delay) && delay.length !== 2) return;
+	let realDelay = 0;
+	if (isArray(delay)) {
+		const [min, max] = delay;
+		realDelay = random(min, max);
+	} else realDelay = delay - (timestamp() - startTime);
+	if (realDelay > 0) await sleep(realDelay);
+}
+
+
+
+function createMockMiddleware(compiler, { formidableOptions = {}, bodyParserOptions = {}, proxies, cookiesOptions, logger, priority = {}, cors: corsOptions, record, replay, activeScene }) {
+	const cors = createCors(corsOptions);
+	return async function mockMiddleware(req, res, next) {
+		const startTime = timestamp();
+		const { query, pathname } = urlParse(req.url);
+		if (!pathname || proxies.length === 0 || !proxies.some((context) => doesProxyContextMatchUrl(context, req.url))) return next();
+		const mockData = compiler.mockData;
+		const mockUrls = matchingWeight(Object.keys(mockData), pathname, priority);
+		if (mockUrls.length === 0 && !record.enabled) return next();
+		const cookies = new Cookies(req, res, cookiesOptions);
+		const { body: parsedBody, rawBody } = await parseRequestBodyWithRaw(req, logger, formidableOptions, bodyParserOptions);
+		cacheRequestBody(req, rawBody);
+		let mock;
+		let _mockUrl;
+		const method = req.method.toUpperCase();
+		const extraReq = {
+			query,
+			refererQuery: req.headers.referer ? urlParse(req.headers.referer).query : {},
+			body: parsedBody,
+			headers: req.headers,
+			getCookie: cookies.get.bind(cookies)
+		};
+		const headerScene = req.headers["x-mock-scene"];
+		const effectiveScene = headerScene ? toArray(headerScene).map((item) => item.split(",").map((s) => s.trim())).flat().filter(Boolean) : activeScene;
+		for (const mockUrl of mockUrls) {
+			mock = findMockData(mockData[mockUrl], logger, {
+				pathname,
+				method,
+				request: extraReq,
+				activeScene: effectiveScene
+			});
+			if (mock) {
+				_mockUrl = mockUrl;
+				break;
+			}
+		}
+		if (replay && !mock) mock = await replayRecordedRequest(req, pathname, extraReq.body, record);
+		if (!mock) {
+			record.enabled && recordRequestWithRawReq(req, pathname, extraReq.body);
+			const matched = mockUrls.map((m) => m === _mockUrl ? ansis.underline.bold(m) : ansis.dim(m)).join(", ");
+			matched.length && logger.warn(`${ansis.green(pathname)} matches ${matched}, but mock data is not found.`);
+			return next();
+		}
+		if (cors) {
+			const [error] = await attemptAsync(cors, req, res);
+			if (error) {
+				logger.error(`CORS error: ${error}`);
+				return next(error);
+			}
+		}
+		const request = req;
+		const response = res;
+		Object.assign(request, omit(extraReq, ["headers"]));
+		request.params = parseRequestParams(mock.url, pathname);
+		response.setCookie = cookies.set.bind(cookies);
+		const { delay, type = "json", response: responseFn, log: logLevel, error: errorConfig, __filepath__: filepath } = mock;
+		let { body, status = 200, statusText } = mock;
+		const shouldSimulateError = errorConfig && (errorConfig.probability ?? .5) > Math.random();
+		if (shouldSimulateError) {
+			status = errorConfig.status ?? 500;
+			statusText = errorConfig.statusText;
+			body = errorConfig.body;
+		}
+		provideResponseStatus(response, status, statusText);
+		await provideResponseHeaders(request, response, mock, logger);
+		await provideResponseCookies(request, response, mock, logger);
+		logger.info(requestLog(request, filepath, shouldSimulateError), logLevel);
+		logger.debug(`${ansis.magenta("DEBUG")} ${ansis.underline(pathname)} matches: [ ${mockUrls.map((m) => m === _mockUrl ? ansis.underline.bold(m) : ansis.dim(m)).join(", ")} ]\n`);
+		if (!isNil(body)) {
+			const [error] = await attemptAsync(async () => {
+				const content = isFunction(body) ? await body(request) : body;
+				await responseRealDelay(startTime, delay);
+				sendResponseData(response, content, type);
+			});
+			if (error) {
+				logger.error(`${ansis.red(`mock error at ${pathname}`)}\n  ${error}\n  at body (${ansis.underline.gray(filepath)})`, logLevel);
+				provideResponseStatus(response, 500);
+				res.end("");
+			}
+			return;
+		}
+		if (responseFn) {
+			const [error] = await attemptAsync(async () => {
+				await responseRealDelay(startTime, delay);
+				await responseFn(request, response, next);
+			});
+			if (error) {
+				logger.error(`${ansis.red(`mock error at ${pathname}`)}\n  ${error}\n  at response (${ansis.underline.gray(filepath)})`, logLevel);
+				provideResponseStatus(response, 500);
+				res.end("");
+			}
+			return;
+		}
+		res.end("");
+	};
+}
+
+
+
+function mockWebSocket(compiler, server, { wsProxies: proxies, cookiesOptions, logger, activeScene }) {
+	const hmrMap =  new Map();
+	const poolMap =  new Map();
+	const wssContextMap =  new WeakMap();
+	const getWssMap = (mockUrl) => {
+		let wssMap = poolMap.get(mockUrl);
+		if (!wssMap) poolMap.set(mockUrl, wssMap =  new Map());
+		return wssMap;
+	};
+	const getWss = (wssMap, pathname) => {
+		let wss = wssMap.get(pathname);
+		if (!wss) wssMap.set(pathname, wss = new WebSocketServer({ noServer: true }));
+		return wss;
+	};
+	const addHmr = (filepath, mockUrl) => {
+		let urlList = hmrMap.get(filepath);
+		if (!urlList) hmrMap.set(filepath, urlList =  new Set());
+		urlList.add(mockUrl);
+	};
+	const setupWss = (wssMap, wss, mock, context, pathname, filepath) => {
+		try {
+			mock.setup?.(wss, context);
+			wss.on("close", () => wssMap.delete(pathname));
+			wss.on("error", (e) => {
+				logger.error(`${ansis.red(`WebSocket mock error at ${wss.path}`)}\n${e}\n  at setup (${filepath})`, mock.log);
+			});
+		} catch (e) {
+			logger.error(`${ansis.red(`WebSocket mock error at ${wss.path}`)}\n${e}\n  at setup (${filepath})`, mock.log);
+		}
+	};
+	const emitConnection = (wss, ws, req, connectionList) => {
+		wss.emit("connection", ws, req);
+		ws.on("close", () => {
+			findFirstThen(connectionList, (item) => item.ws === ws, (v) => remove(connectionList, v));
+		});
+	};
+	const restartWss = (wssMap, wss, mock, pathname, filepath) => {
+		const { cleanupList, connectionList, context } = wssContextMap.get(wss);
+		cleanupRunner(cleanupList);
+		connectionList.forEach(({ ws }) => ws.removeAllListeners());
+		wss.removeAllListeners();
+		setupWss(wssMap, wss, mock, context, pathname, filepath);
+		connectionList.forEach(({ ws, req }) => emitConnection(wss, ws, req, connectionList));
+	};
+	compiler.on?.("mock:update-end", (filepath) => {
+		if (!hmrMap.has(filepath)) return;
+		const mockUrlList = hmrMap.get(filepath);
+		if (!mockUrlList) return;
+		for (const mockUrl of mockUrlList.values()) for (const mock of compiler.mockData[mockUrl]) {
+			if (!mock.ws || mock.__filepath__ !== filepath) continue;
+			const wssMap = getWssMap(mockUrl);
+			for (const [pathname, wss] of wssMap.entries()) restartWss(wssMap, wss, mock, pathname, filepath);
+			return;
+		}
+	});
+	const effectActiveScene = toArray(activeScene);
+	server?.on("upgrade", (req, socket, head) => {
+		const { pathname, query } = urlParse(req.url);
+		if (!pathname || proxies.length === 0 || !proxies.some((context) => doesProxyContextMatchUrl(context, req.url))) return;
+		const mockData = compiler.mockData;
+		const mockUrl = objectKeys(mockData).find((key) => isPathMatch(key, pathname));
+		if (!mockUrl) return;
+		const mock = mockData[mockUrl].find((mock) => {
+			return mock.url && mock.ws && matchScene(effectActiveScene, mock.scene) && isPathMatch(mock.url, pathname);
+		});
+		if (!mock) return;
+		const filepath = mock.__filepath__;
+		addHmr(filepath, mockUrl);
+		const wssMap = getWssMap(mockUrl);
+		const wss = getWss(wssMap, pathname);
+		let wssContext = wssContextMap.get(wss);
+		if (!wssContext) {
+			const cleanupList = [];
+			const context = { onCleanup: (cleanup) => cleanupList.push(cleanup) };
+			wssContext = {
+				cleanupList,
+				context,
+				connectionList: []
+			};
+			wssContextMap.set(wss, wssContext);
+			setupWss(wssMap, wss, mock, context, pathname, filepath);
+		}
+		const request = req;
+		const cookies = new Cookies(req, req, cookiesOptions);
+		const { query: refererQuery } = urlParse(req.headers.referer || "");
+		request.query = query;
+		request.refererQuery = refererQuery;
+		request.params = parseRequestParams(mockUrl, pathname);
+		request.getCookie = cookies.get.bind(cookies);
+		wss.handleUpgrade(request, socket, head, (ws) => {
+			logger.info(`${ansis.magenta.bold("WebSocket")} ${ansis.green(req.url)} connected ${ansis.dim(`(${filepath})`)}`, mock.log);
+			wssContext.connectionList.push({
+				req: request,
+				ws
+			});
+			emitConnection(wss, ws, request, wssContext.connectionList);
+		});
+	});
+	server?.on("close", () => {
+		for (const wssMap of poolMap.values()) {
+			for (const wss of wssMap.values()) {
+				cleanupRunner(wssContextMap.get(wss).cleanupList);
+				wss.close();
+			}
+			wssMap.clear();
+		}
+		poolMap.clear();
+		hmrMap.clear();
+	});
+}
+
+function cleanupRunner(cleanupList) {
+	let cleanup;
+	while (cleanup = cleanupList.shift()) cleanup?.();
+}
+
+
+
+const logLevels = {
+	silent: 0,
+	error: 1,
+	warn: 2,
+	info: 3,
+	debug: 4
+};
+
+function createLogger(prefix, defaultLevel = "info") {
+	prefix = `[${prefix}]`;
+	
+	function output(type, msg, level) {
+		level = isBoolean(level) ? level ? defaultLevel : "error" : level;
+		if (logLevels[level] >= logLevels[type]) {
+			const method = type === "info" || type === "debug" ? "log" : type;
+			const tag = type === "debug" ? ansis.magenta.bold(prefix) : type === "info" ? ansis.cyan.bold(prefix) : type === "warn" ? ansis.yellow.bold(prefix) : ansis.red.bold(prefix);
+			const format = `${ansis.dim(( new Date()).toLocaleTimeString())} ${tag} ${msg}`;
+			console[method](format);
+		}
+	}
+	return {
+		debug(msg, level = defaultLevel) {
+			output("debug", msg, level);
+		},
+		info(msg, level = defaultLevel) {
+			output("info", msg, level);
+		},
+		warn(msg, level = defaultLevel) {
+			output("warn", msg, level);
+		},
+		error(msg, level = defaultLevel) {
+			output("error", msg, level);
+		}
+	};
+}
+
+export { recoverRequest as a, processRawData as c, getHash as d, normalizePath as f, createMockMiddleware as i, sortByValidator as l, createMatcher as m, logLevels as n, Recorder as o, isPackageExists as p, mockWebSocket as r, processMockData as s, createLogger as t, debug as u };

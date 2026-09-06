@@ -1,0 +1,31 @@
+{
+  "name": "@devframes/service-shiki",
+  "version": "0.9.12",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700700422,
+      "integrity": "sha512-n3WGEZIoIN0XVo2ZLvhnpq/KGThorgFZXH9X5nq93t01tCTkuoJ/+16+bqJSbhQk59ny8pQYUMKoa3FPAW9XDw==",
+      "mode": 420,
+      "size": 1207
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700700423,
+      "integrity": "sha512-8g255B4yDdef+JanzFG+LX0uiNCPwJjvGka04oGqRCIDyMPL1CRx9wKn3Kg8YTMVHuoCUOrB4T6q9As8qufoNg==",
+      "mode": 420,
+      "size": 4304
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700700424,
+      "integrity": "sha512-1W6qidaaZKyxqVziCCJg0EOPO2VYSeCNeRs70h5RW4vTUOMjJiBNl3wL5qgQDUqAz0eHcKZ9Qd3EvoBtIzCbgA==",
+      "mode": 420,
+      "size": 2951
+    },
+    "LICENSE.md": {
+      "checkedAt": 1788700700424,
+      "integrity": "sha512-95Dq+Xrz2t5znu4SLw5QrWxcC40vK37iXzqtyjoBEM4rYefSK0+9L8zt/3gdFgyY/FtlwMsNB3Srk3KpJ7ToXQ==",
+      "mode": 420,
+      "size": 1102
+    }
+  }
+}

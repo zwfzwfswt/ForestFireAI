@@ -1,0 +1,115 @@
+{
+  "name": "zigpty",
+  "version": "0.2.1",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700679969,
+      "integrity": "sha512-ZUOz4mMEav3Dj+n3ZhgAmeZ5pM/9oYtnAll8fJqq6C8n6eBNpNUv3con8e42dckvhnjRUWcTW8p5juElOx3RRA==",
+      "mode": 420,
+      "size": 1078
+    },
+    "package.json": {
+      "checkedAt": 1788700704381,
+      "integrity": "sha512-8Iu1cmBVHi8fuNpuySMs5ecJRmZWusHLfqnHs7+78HTyUAhTtT7krzJiZcL3ZvYrolKXzhjT/581hMP66Pdyrw==",
+      "mode": 420,
+      "size": 952
+    },
+    "README.md": {
+      "checkedAt": 1788700704382,
+      "integrity": "sha512-Y6H+Ufex0t9xUyXyRFYZ9w2Nt0/3kc9e/ucVnjsY0J+egZJ375pKsQotjfIJtGjsNfs7fQ6sV7GF6cFT3u86sg==",
+      "mode": 420,
+      "size": 22102
+    },
+    "dist/idle/index.mjs": {
+      "checkedAt": 1788700704382,
+      "integrity": "sha512-KbG6LoRvbjUWdaULLOfoi/4mnaAWEpJFYfC0wy50emfFnJPvllLlsSkuT06ZHKHWHb2iYGc9Rcgxa1HH7O7Ttw==",
+      "mode": 420,
+      "size": 4011
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700704383,
+      "integrity": "sha512-m4LUR6eSp47EAPaYYzF/ROa7+hsbIMo09DqlkmLvOfWzTJlPb+Bb2UKO+dqaH2zNWikOmzuE8mmpn8tjwAdzgg==",
+      "mode": 420,
+      "size": 27165
+    },
+    "dist/osc/index.mjs": {
+      "checkedAt": 1788700704384,
+      "integrity": "sha512-hFcQ4yqzrEQqUuGrHuvkRsBI8ihiQwgOVUi5xdCVtIU+BoLZvanMxf6mTWu2JWMFbYkr4Jm067tI1lk9y74mFw==",
+      "mode": 420,
+      "size": 13322
+    },
+    "dist/idle/index.d.mts": {
+      "checkedAt": 1788700704385,
+      "integrity": "sha512-+tNbhj4cLd3vzwoaNu2LSgsI+CojgOHeQ7X0bks/pSoBG/3UqF/u9MOyOzrLpYryDNoG14r7AoZGp2Pek0vAig==",
+      "mode": 420,
+      "size": 4779
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700704386,
+      "integrity": "sha512-T6sIJnJBTyVrrk0iQHy1PQrxs1p7SlTko0MlX1XgOCwelWUfBMJpHu9AYhcRWtzTOenNXlqkyvqcQo7IP8HS/A==",
+      "mode": 420,
+      "size": 3217
+    },
+    "dist/osc/index.d.mts": {
+      "checkedAt": 1788700704386,
+      "integrity": "sha512-sSterYmXgq2cbW1FHzXS0SoSMyR3mfTBqI8FWGP4lmPWfhwoTUDvQSIYLXo/SeByDckYlcs879kBUxTJiSUitA==",
+      "mode": 420,
+      "size": 9178
+    },
+    "dist/_chunks/types.d.mts": {
+      "checkedAt": 1788700704387,
+      "integrity": "sha512-jjbCIyluq/QAe5JGX6oN20YtNoIGRAJY4wd/XZJpMrZ8YYA2x6PnII4+vnj9iG2Hh9VjXA8oTyxzX8FNpar1Gg==",
+      "mode": 420,
+      "size": 8411
+    },
+    "prebuilds/zigpty.darwin-arm64.node": {
+      "checkedAt": 1788700704388,
+      "integrity": "sha512-pqRcbnQu1wQ5UWQhHVc/yZsm9A7xqtcfxDt0C1idqRIdoUsEGRrIXKmaR6GzaupB6/l3SXqbK7HsQWr/nFm/cg==",
+      "mode": 493,
+      "size": 73376
+    },
+    "prebuilds/zigpty.darwin-x64.node": {
+      "checkedAt": 1788700704389,
+      "integrity": "sha512-jnfG4eUZj/CVQZ8mP4RttPDykRImk5QxRXtbVorfx3JXsb9MoTXro/EMVdCrPu/SkjN3Lyp35XYOBtMkJahDHw==",
+      "mode": 493,
+      "size": 32704
+    },
+    "prebuilds/zigpty.linux-arm64-musl.node": {
+      "checkedAt": 1788700704389,
+      "integrity": "sha512-9I1oOVxpu1v5sGuEeYnZCHc1szue/d8wHGWZ1hbEPFOP2eJV62EHZ5F0DJaBe6OlAqEUA5SPy8qbehc/tOvoaA==",
+      "mode": 493,
+      "size": 28352
+    },
+    "prebuilds/zigpty.linux-arm64.node": {
+      "checkedAt": 1788700704390,
+      "integrity": "sha512-zylFE/IJW7AYmz2wX4KhEVQT8vW7jWXyZVa4Pf/ywVtX59ox3fiPOWMw0lbBJPYs85k5nnR/VY4pt0uFl7Ahhw==",
+      "mode": 493,
+      "size": 28728
+    },
+    "prebuilds/zigpty.linux-x64-musl.node": {
+      "checkedAt": 1788700704391,
+      "integrity": "sha512-KlubuxmR+ZwOrTdE84fWqGc/zNN3fW/QYqYIftiBvcoToF8U+ePa5hVmeitLGZoZpo3WwOyPeGtzfCPCIvYKug==",
+      "mode": 493,
+      "size": 28992
+    },
+    "prebuilds/zigpty.linux-x64.node": {
+      "checkedAt": 1788700704392,
+      "integrity": "sha512-7mueFsMSwj9LbVa1fiW+NFrxsQmmjgaCO4SjS7eTqngUf/Ja9z01t7AqiQfQZcyfDrssauaq7qgGdJuYm6EtTQ==",
+      "mode": 493,
+      "size": 29496
+    },
+    "prebuilds/zigpty.win32-arm64.node": {
+      "checkedAt": 1788700704392,
+      "integrity": "sha512-jB7spJi2UjIt/yDhCS35pdaVc0jy6goc7SDUE20a2qIsqRZab7zHlBmUxkzM7XcgTkXv2AXswYGqfZeonWS8GQ==",
+      "mode": 493,
+      "size": 31232
+    },
+    "prebuilds/zigpty.win32-x64.node": {
+      "checkedAt": 1788700704393,
+      "integrity": "sha512-+Wt6MCFiRw2u6a/UbHYOnkmqs8OevHecQBFF8B8+Wna2xsvrwPe4/Ip40xi8oFF1qIUIvwkF/7uXtLjOkexxVQ==",
+      "mode": 493,
+      "size": 74752
+    }
+  }
+}

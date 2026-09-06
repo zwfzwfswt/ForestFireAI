@@ -1,0 +1,49 @@
+{
+  "name": "nypm",
+  "version": "0.6.9",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700702522,
+      "integrity": "sha512-ZUOz4mMEav3Dj+n3ZhgAmeZ5pM/9oYtnAll8fJqq6C8n6eBNpNUv3con8e42dckvhnjRUWcTW8p5juElOx3RRA==",
+      "mode": 420,
+      "size": 1078
+    },
+    "package.json": {
+      "checkedAt": 1788700702523,
+      "integrity": "sha512-vWvkTJEqlwkil/vVGLza+hOlBgcugy4hfRCzrRnOC/FABUQ/JceObvgVFQcASGwPd/qrP81k+1SEkIx8lUHUlw==",
+      "mode": 420,
+      "size": 1441
+    },
+    "README.md": {
+      "checkedAt": 1788700702524,
+      "integrity": "sha512-VQEWPZA1x3jTyRuN0HJMwVkbWcER0ZBdlCDqJia5unsC93L83X47Yew3O2rGxy58nw/a89EA38p3a+tQHwSodQ==",
+      "mode": 420,
+      "size": 4370
+    },
+    "dist/cli.mjs": {
+      "checkedAt": 1788700702525,
+      "integrity": "sha512-0KNIlIof+2+TCXenDs3Knh840VxUYvlpIVRTQGd6ftVn1tAmyxlFsuofav4hXsnUkjOguFoXkqflqzdAgyuapA==",
+      "mode": 493,
+      "size": 17350
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700702526,
+      "integrity": "sha512-iEi21L+rMQdLkbmAB7H8MM1aWE0wqMTYaB3ZsRGUCVtz11bgEHHZIcIUnDW1fcQ4WNw6U7OUr5xna44GOC0RSQ==",
+      "mode": 420,
+      "size": 18695
+    },
+    "dist/cli.d.mts": {
+      "checkedAt": 1788700702526,
+      "integrity": "sha512-6SBSTvSYIRJbwG2uYc2O22Vq5hdpuHsGpRE46M4riss9wfeJCpEZq8y27lVmiQNW9kA42MpNmbimIwhF+ObhBg==",
+      "mode": 420,
+      "size": 9
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700702527,
+      "integrity": "sha512-HTx3MJGcNoG2vD9wvgnUNt1c/j7xnT+FMkSTLezrR/Foeiflw+Fn5I7s9Uo6I29ds8AXzagWz/iKhomDnhMDyg==",
+      "mode": 420,
+      "size": 8466
+    }
+  }
+}

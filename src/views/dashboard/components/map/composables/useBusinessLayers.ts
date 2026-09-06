@@ -2,7 +2,11 @@ import { shallowRef } from "vue";
 import type * as Leaflet from "leaflet";
 import { layerDefinitions } from "../layers/layerDefinitions";
 import { createBusinessGeoJSON } from "../layers/createBusinessLayer";
-import type { BusinessLayerState, MapLayerRegistry } from "../layers/mapLayerRegistry";
+import type {
+  BusinessLayerState,
+  MapLayerRegistry,
+  LayerFactory,
+} from "../layers/mapLayerRegistry";
 import { mockMapLayers } from "../mock/mockMapLayers";
 
 export function useBusinessLayers() {
@@ -12,18 +16,27 @@ export function useBusinessLayers() {
   const publish = (value: readonly BusinessLayerState[]) => {
     states.value = value;
   };
-  function attach(layers: MapLayerRegistry, L: typeof Leaflet) {
+  function attach(
+    layers: MapLayerRegistry,
+    L: typeof Leaflet,
+    factories: Record<string, LayerFactory> = {}
+  ) {
     registry = layers;
     for (const definition of layerDefinitions) {
       const data = mockMapLayers[definition.id];
       layers.registerBusiness(
-        { ...definition, ...preferences.get(definition.id) },
-        data
-          ? (pane) => ({
-              layer: createBusinessGeoJSON(L, definition, data, pane),
-              featureCount: data.features.length,
-            })
-          : undefined
+        {
+          ...definition,
+          ...(factories[definition.id] ? { source: "mock" as const, visible: true } : {}),
+          ...preferences.get(definition.id),
+        },
+        factories[definition.id] ??
+          (data
+            ? (pane) => ({
+                layer: createBusinessGeoJSON(L, definition, data, pane),
+                featureCount: data.features.length,
+              })
+            : undefined)
       );
     }
   }

@@ -1,0 +1,68 @@
+import { DevframeServiceDefinition } from "devframe/types";
+import { codeToHast, codeToTokens } from "shiki";
+//#region src/index.d.ts
+declare const SHIKI_SERVICE_PACKAGE = "@devframes/service-shiki";
+declare const SHIKI_SERVICE_SCOPE = "devframes:service:shiki";
+/** Dual light/dark theme pair, rendered via Shiki's dual-theme CSS variables. */
+interface ShikiThemes {
+  light: string;
+  dark: string;
+}
+/** Defaults matching the `@antfu/design` light/dark surfaces. */
+declare const SHIKI_DEFAULT_THEMES: ShikiThemes;
+interface ShikiServiceOptions {
+  /**
+   * Theme pair every request uses unless it carries its own. On merge, the
+   * later installer's pair wins.
+   */
+  themes?: ShikiThemes;
+  /**
+   * Languages to eagerly load at setup (others load on demand, per request).
+   * Merged as a union across installers.
+   */
+  langs?: string[];
+}
+interface ShikiHighlightInput {
+  code: string;
+  /** Language id; unknown ids degrade to plain text instead of throwing. */
+  lang?: string;
+  /** Per-request theme override. */
+  themes?: ShikiThemes;
+}
+type ShikiHast = Awaited<ReturnType<typeof codeToHast>>;
+type ShikiTokens = Awaited<ReturnType<typeof codeToTokens>>;
+interface ShikiServiceApi {
+  /** Highlight to HTML (dual-theme: light values inline, dark via `--shiki-dark` vars). */
+  highlight: (input: ShikiHighlightInput) => Promise<{
+    html: string;
+  }>;
+  /** Highlight to a HAST tree, for surfaces that render their own DOM. */
+  codeToHast: (input: ShikiHighlightInput) => Promise<ShikiHast>;
+  /** Highlight to themed tokens, for line-oriented renderers (e.g. diff views). */
+  codeToTokens: (input: ShikiHighlightInput) => Promise<ShikiTokens>;
+}
+declare module 'devframe' {
+  interface DevframeRpcServerFunctions {
+    'devframes:service:shiki:highlight': (input: ShikiHighlightInput) => Promise<{
+      html: string;
+    }>;
+    'devframes:service:shiki:code-to-hast': (input: ShikiHighlightInput) => Promise<ShikiHast>;
+    'devframes:service:shiki:code-to-tokens': (input: ShikiHighlightInput) => Promise<ShikiTokens>;
+  }
+  interface DevframeServicesRegistry {
+    '@devframes/service-shiki': ShikiServiceApi;
+  }
+  interface DevframeServicesScopeRegistry {
+    '@devframes/service-shiki': 'devframes:service:shiki';
+  }
+}
+/**
+ * The Shiki wire service: server-side syntax highlighting shared by every
+ * plugin on the host, so client bundles stop shipping their own grammars and
+ * themes. Shiki itself loads lazily on first use; results are LRU-cached per
+ * `(code, lang, themes)` and every RPC function is `cacheable` on the client
+ * side too.
+ */
+declare function createShikiService(options?: ShikiServiceOptions): DevframeServiceDefinition<ShikiServiceApi, ShikiServiceOptions>;
+//#endregion
+export { SHIKI_DEFAULT_THEMES, SHIKI_SERVICE_PACKAGE, SHIKI_SERVICE_SCOPE, ShikiHast, ShikiHighlightInput, ShikiServiceApi, ShikiServiceOptions, ShikiThemes, ShikiTokens, createShikiService, createShikiService as default };

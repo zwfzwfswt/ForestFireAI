@@ -1,0 +1,49 @@
+{
+  "name": "@unocss/preset-web-fonts",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700694196,
+      "integrity": "sha512-X5g3s5tZ2GHXNrNR/tFH7ikdgTZX/K0LuBdeqYTq7hA/2MEJLcmlghFvT02Lib5wbRJ4adD2yRw1YUKraWvKKw==",
+      "mode": 420,
+      "size": 1123
+    },
+    "README.md": {
+      "checkedAt": 1788700694197,
+      "integrity": "sha512-sKaVwpF7QO6tEcn7gmlrXvBakKgLevL0HVrhbZ2LxwztNELwZwvE/dwTG5CucjHUz/i3breDApB9HfxzlkjKdw==",
+      "mode": 420,
+      "size": 272
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700694198,
+      "integrity": "sha512-eblWSYsixRmCP14YjgWSfopKTpWZshmN5AGouprqQE5mwQWk88TeDEKXNDI306Qfw1m+EuJgQrqnnlfBPRybhA==",
+      "mode": 420,
+      "size": 14130
+    },
+    "dist/local.mjs": {
+      "checkedAt": 1788700694199,
+      "integrity": "sha512-kkSvecmeeRaEdmisHJ7FVCAgkZkuP+aQkzfNUUBQF5ExzYx0fS8WOmj9WDf4kpIwEIBqxZLEHDJ0uPT9TAoeeQ==",
+      "mode": 420,
+      "size": 2940
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700694200,
+      "integrity": "sha512-VqNHMrzNlDyHDWkPbc9vEiaJVWUtskhZt9OT9AFs3+nSYm0YeJjfGCx+5H5f0vz3F9jNNhzrJfTSwcItcyv7HA==",
+      "mode": 420,
+      "size": 1104
+    },
+    "dist/local.d.mts": {
+      "checkedAt": 1788700694200,
+      "integrity": "sha512-nfStbxtaejHr+3s8m32/V5voyZ603y/8AirkQMD8ryhwy/qd9j+2p+3E5G160om+DTvkgZTbZger3SXJ1qUR0g==",
+      "mode": 420,
+      "size": 1211
+    },
+    "dist/types-C_6Pcmkh.d.mts": {
+      "checkedAt": 1788700694201,
+      "integrity": "sha512-esKSEnWasrLFhS8BJfF+fOs/hZpedR+zeYw1mRsRaEYy6HksjrmjrSpGThr4yM2LVgBo6x9b+2PLmb0DzFOYeA==",
+      "mode": 420,
+      "size": 3283
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "name": "stylelint-config-recommended-vue",
+  "version": "2.0.0",
+  "description": "The recommended shareable Vue config for Stylelint.",
+  "keywords": [
+    "stylelint",
+    "stylelint-config",
+    "recommended",
+    "vue"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./lib/index.js": "./lib/index.js",
+    "./scss": "./scss/index.js",
+    "./scss/index.js": "./scss/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "scss"
+  ],
+  "engines": {
+    "node": "^22.12 || >=24"
+  },
+  "scripts": {
+    "test": "mocha \"tests/lib/**/*.js\" --reporter dot --timeout 60000",
+    "lint": "eslint .",
+    "eslint-fix": "eslint . --fix",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish"
+  },
+  "dependencies": {
+    "semver": "^7.3.5"
+  },
+  "peerDependencies": {
+    "postcss-html": "^2.0.0",
+    "stylelint": ">=16.0.0",
+    "stylelint-config-html": ">=2.0.0",
+    "stylelint-config-recommended": ">=14.0.0",
+    "stylelint-config-recommended-scss": ">=14.0.0"
+  },
+  "peerDependenciesMeta": {
+    "stylelint-config-recommended-scss": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.1",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.3.0",
+    "@ota-meshi/eslint-plugin": "^0.20.0",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-jsdoc": "^63.0.0",
+    "eslint-plugin-json-schema-validator": "^6.0.0",
+    "eslint-plugin-jsonc": "^3.0.0",
+    "eslint-plugin-n": "^18.0.0",
+    "eslint-plugin-node-dependencies": "^2.2.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "eslint-plugin-regexp": "^3.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "eslint-plugin-yml": "^3.0.0",
+    "mocha": "^11.0.0",
+    "prettier": "^3.0.0",
+    "stylelint": "^17.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ota-meshi/stylelint-config-recommended-vue.git"
+  },
+  "author": "Yosuke Ota (https://github.com/ota-meshi)",
+  "funding": "https://github.com/sponsors/ota-meshi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ota-meshi/stylelint-config-recommended-vue/issues"
+  },
+  "homepage": "https://github.com/ota-meshi/stylelint-config-recommended-vue#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

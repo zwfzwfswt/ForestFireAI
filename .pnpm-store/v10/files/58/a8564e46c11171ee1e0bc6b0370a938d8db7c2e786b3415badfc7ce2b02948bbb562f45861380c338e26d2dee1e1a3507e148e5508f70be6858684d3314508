@@ -1,0 +1,89 @@
+import { Tt as DevframeAuthHandler, o as DevframeNodeContext, s as DevframeNodeRpcSession } from "../context-BBWPLDHh.mjs";
+import "../index-1ezCLThh.mjs";
+import { ColorFn } from "../utils/colors.mjs";
+//#region src/recipes/interactive-auth.d.ts
+interface CreateInteractiveAuthOptions {
+  /**
+   * Static, pre-shared bearer tokens that are always trusted, for CI runs
+   * or shared machines where the interactive code prompt would only get in
+   * the way. Checked in both the handshake handler and the connect-time
+   * hook, alongside tokens minted by a real code exchange.
+   */
+  clientAuthTokens?: string[];
+  /**
+   * Print the current code + magic-link URL. Devframe stays headless, so
+   * there is no default banner printed automatically; call
+   * `auth.printBanner()` yourself once the server is listening. Defaults to
+   * {@link createAuthBanner}'s output; pass its result here directly to
+   * rebrand the box (title / colors), or your own function to replace the
+   * format outright.
+   */
+  banner?: AuthBannerFunction;
+  /**
+   * Called once a code exchange succeeds, so a host rendering its own
+   * banner can retract it. Fires after the rotated code is printed, so
+   * such a host drops that follow-up too and calls `auth.printBanner()`
+   * when it next wants a code on screen. Connect-time trust from a static
+   * or remote-dock token doesn't call this.
+   */
+  onTrusted?: (info: {
+    session: DevframeNodeRpcSession;
+    authToken: string;
+  }) => void;
+  /**
+   * The base URL the magic link should point at. Defaults to
+   * `context.host.resolveOrigin()`.
+   */
+  serverUrl?: () => string;
+}
+/** Signature of `options.banner`: render the current auth code + magic-link URL. */
+type AuthBannerFunction = (info: {
+  code: string;
+  url: string;
+}) => void;
+/** Palette for {@link createAuthBanner}'s box - one color per part, so a host can rebrand a subset. */
+interface CreateAuthBannerColorsOptions {
+  border: ColorFn;
+  title: ColorFn;
+  label: ColorFn;
+  code: ColorFn;
+  url: ColorFn;
+}
+interface CreateAuthBannerOptions {
+  /** Box title. Defaults to `'Devframe'` - set to your product name for branding. */
+  title?: string;
+  /** Palette overrides; unset colors fall back to dim/bold/cyan defaults. */
+  colors?: Partial<CreateAuthBannerColorsOptions>;
+}
+/**
+ * Build a {@link AuthBannerFunction} that renders the auth code + magic-link
+ * URL as a small bordered box, its two rows label-aligned. `createInteractiveAuth`
+ * falls back to `createAuthBanner()` when no `banner` is given; call this
+ * yourself to rebrand the box (`title` / `colors`) and pass the result as
+ * `options.banner`.
+ */
+declare function createAuthBanner(options?: CreateAuthBannerOptions): AuthBannerFunction;
+/**
+ * Package the interactive OTP auth protocol devframe's primitives
+ * (`exchangeTempAuthCode`, `verifyAuthToken`, `revokeAuthToken`,
+ * `getTempAuthCode`, `buildOtpAuthUrl`) implement into a ready-made
+ * {@link DevframeAuthHandler}: the handshake RPC functions, the resolver
+ * gate, the connect-time trust hook, and the startup banner.
+ *
+ * The auth storage stays internal to this handler; callers never reach into
+ * `devframe/node/hub-internals` themselves.
+ *
+ * ```ts
+ * import { createInteractiveAuth } from 'devframe/recipes/interactive-auth'
+ *
+ * const auth = createInteractiveAuth(ctx)
+ * auth.rpcFunctions.forEach(fn => ctx.rpc.register(fn))
+ * auth.printBanner()
+ *
+ * // wire `auth.authorize` / `auth.onConnect` into your transport, or pass
+ * // the whole handler to `initDevframe` / `initHub` via their `auth` option.
+ * ```
+ */
+declare function createInteractiveAuth(context: DevframeNodeContext, options?: CreateInteractiveAuthOptions): DevframeAuthHandler;
+//#endregion
+export { AuthBannerFunction, CreateAuthBannerColorsOptions, CreateAuthBannerOptions, CreateInteractiveAuthOptions, createAuthBanner, createInteractiveAuth };

@@ -1,0 +1,163 @@
+{
+  "name": "@devframes/hub",
+  "version": "0.9.12",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700703613,
+      "integrity": "sha512-DBlNMzVX9JoCDVMB5sQppo2AEnxrRg17ar5OYQafj4pvZCUrgT8vUV38m8Jwbz0rWP0NM2UWa+cxJjIKa7aRlw==",
+      "mode": 420,
+      "size": 1619
+    },
+    "LICENSE.md": {
+      "checkedAt": 1788700703614,
+      "integrity": "sha512-BN10Y9hkrVlzA+oVyumK1SRplQ3ax3DAxkHH7W3XKJG1ftwgxOwg3k+QfGtp/VwxGmNmssn2uJx2Jj44imR/rg==",
+      "mode": 420,
+      "size": 1102
+    },
+    "dist/assemble-CbPTcI7d.mjs": {
+      "checkedAt": 1788700703614,
+      "integrity": "sha512-i2tXOtiULruy+LC8KsmuCkc9TxJ+e+3aNanQnG+bDXI34cc/PdTt7fdn0f34q73EAcBrK5MvlI2BEwHz4yGJHg==",
+      "mode": 420,
+      "size": 4429
+    },
+    "dist/node/build.mjs": {
+      "checkedAt": 1788700703615,
+      "integrity": "sha512-1vkJ/zIZBDMQ+Ie+P1D2uoGh5TOUV0H4EExkAvCHEcnaLaiXFZsWD9Y+fLS6Z4HORxnOmNG+Ra56kgqKheCwhw==",
+      "mode": 420,
+      "size": 9876
+    },
+    "dist/constants-Da23JxCZ.mjs": {
+      "checkedAt": 1788700703615,
+      "integrity": "sha512-uvShgspWUhQMrQwnA/ltBlr3zTqy1Rz8QDd+aCUnog6W+IHxlChwDGveRQV5bwT6tRP/XOEeWegBhGvoXXYNPQ==",
+      "mode": 420,
+      "size": 5396
+    },
+    "dist/constants.mjs": {
+      "checkedAt": 1788700703616,
+      "integrity": "sha512-9pssT9jOCHGfEojKoo2aFEqdR73y2se+2SWivaBFt3E7WYdTjc5kKhHgIJzvW/DD2n05alVPs8+gejY0BWLWIw==",
+      "mode": 420,
+      "size": 382
+    },
+    "dist/context-nVwOE7i1.mjs": {
+      "checkedAt": 1788700703617,
+      "integrity": "sha512-o1z9KTJloCbu6nEiuvgSp5BvgTfryZdrnzYgXah4RqiSorpnWtIAbXSt7kkai3pG7yBQYylgWfAAbsb5b7UTyw==",
+      "mode": 420,
+      "size": 48428
+    },
+    "dist/define-Ceekw2EO.mjs": {
+      "checkedAt": 1788700703617,
+      "integrity": "sha512-+Zd7GFebHzCy1FoNtlAMiFF0kttRLNP6JkbOFbBbKq4ofX0r9nGE64vP4gIVZFVTDGudEXCfuarOnF+s5QIraQ==",
+      "mode": 420,
+      "size": 347
+    },
+    "dist/dist-BP3CGpgZ.mjs": {
+      "checkedAt": 1788700703618,
+      "integrity": "sha512-dhpU8p41ku6r3Y10wch0vQ+Lyna9P1Fift42jpmXVS53qwtmGwAtwyAtwimuuNWMwRwK/7+Ea4cnQhxyNSFSZQ==",
+      "mode": 420,
+      "size": 5386
+    },
+    "dist/client/index.mjs": {
+      "checkedAt": 1788700703619,
+      "integrity": "sha512-NxQ08InEDtzQ0BMtEPC9NjzQGjxZrLvdUErGa4KTxsBc2o0+4CO/LxptfHAjdQKF8QxxWwsfUhf3aPI/W+Dqqg==",
+      "mode": 420,
+      "size": 36768
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700703619,
+      "integrity": "sha512-mNTQNRlRbaFDEZn6VVmD4ndRGI5cNlkEiW61THUWUP84YEmnz3YZRtZD0cHZFVYB9i2hNDSPk9/9hvMgbfSQHQ==",
+      "mode": 420,
+      "size": 174
+    },
+    "dist/node/index.mjs": {
+      "checkedAt": 1788700703620,
+      "integrity": "sha512-ghXESDEd8yaJV78KvLWrzrl0vdBBziIZeN0lwvaPQBrdnUfVOkhGi/LlCdnUNvLFGCwt5ME6QL86RMCxwkqXtw==",
+      "mode": 420,
+      "size": 190426
+    },
+    "dist/types/index.mjs": {
+      "checkedAt": 1788700703621,
+      "integrity": "sha512-z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg==",
+      "mode": 420,
+      "size": 0
+    },
+    "dist/node/initiate.mjs": {
+      "checkedAt": 1788700703621,
+      "integrity": "sha512-08yj4dnxgsXv1zKW3pkiLQwaqwFQYAWu3C0ElXFmr6PwelzAmc6N8CpkBtqnBzcyn53IkFMxhFbRI6YP4S/dzg==",
+      "mode": 420,
+      "size": 9494
+    },
+    "dist/remote-url-UClKLQ5_.mjs": {
+      "checkedAt": 1788700703622,
+      "integrity": "sha512-bE+B+yAKAEoez50fF8eQeEQu5JU29g1cKGgevvbwZ8v6HprMyf2Dq2gat7tkRh9vzx1io3HsmdrjjfaSGEL2Zg==",
+      "mode": 420,
+      "size": 6067
+    },
+    "dist/node/build.d.mts": {
+      "checkedAt": 1788700703622,
+      "integrity": "sha512-cOx/uVGU2WHT/ayAXB5dRVuf4hJTL7fvHBkEGWVwX5BbTdoyV09z+uz2sH4KS9ckqIlRPZpPzJmFIw3jGZzhXw==",
+      "mode": 420,
+      "size": 4843
+    },
+    "dist/constants-Bz4yclHo.d.mts": {
+      "checkedAt": 1788700703623,
+      "integrity": "sha512-C3JUGqXr4ttpka0fuhQIyxIbBeb8Ba47p7yi13Ebx7aHJmLuloXCElgd0yDw4PDARSZ+we5lYWOMGiL60oehNg==",
+      "mode": 420,
+      "size": 5644
+    },
+    "dist/constants.d.mts": {
+      "checkedAt": 1788700703624,
+      "integrity": "sha512-KSJFBGsjkrSkVIAupa0viv7gCgE3s6RMrH50ge88v1IeafzaA/UWW7ppqRNgZzniK19KwCtA4DZiM2SVtwIf9w==",
+      "mode": 420,
+      "size": 381
+    },
+    "dist/context-BmHQp89a.d.mts": {
+      "checkedAt": 1788700703624,
+      "integrity": "sha512-ZwW4xkAgIaUcMHBhV//X8IRYcY4pfqBL6cRa0vy+StMV2KJUbKM+u5r6UOHb63S2ll8YVEZYm8/Tl1A29rAxgA==",
+      "mode": 420,
+      "size": 23105
+    },
+    "dist/index-Dv8iu9St.d.mts": {
+      "checkedAt": 1788700703625,
+      "integrity": "sha512-/L6xg+tlAW3DHSvHIhQsagJpijpN+IXQR4ClQifM+yAdmvTvDX4rX9DfT77WOjJR+o3K8t7EkJUb2zQMUDZyDQ==",
+      "mode": 420,
+      "size": 1255
+    },
+    "dist/client/index.d.mts": {
+      "checkedAt": 1788700703626,
+      "integrity": "sha512-RqN9bmrYkyKnurTwrwhx3EJP8c12mz1ToFfe4UsqJqBtBCyIbcEQPWw+6uJLQ35Z6mzLmnuDfTrVBIkg+EwPXg==",
+      "mode": 420,
+      "size": 35612
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700703626,
+      "integrity": "sha512-WDldtWcmjtLYgdetHhOty9f2ZPm8qI+I4ElXlRVloQj+EWOSlW6u2KvYS7XXo81Vz5CTqeZO9P719FVzjxpyIg==",
+      "mode": 420,
+      "size": 6311
+    },
+    "dist/node/index.d.mts": {
+      "checkedAt": 1788700703627,
+      "integrity": "sha512-fLX+9CzOP3I5BJ+iVn/OEM/+OxapyflGXa9iGlzhgX/Pe3vxx+eWeAHIorunMz2rQeQTeOXg1Z6DNkTA4csgjw==",
+      "mode": 420,
+      "size": 21754
+    },
+    "dist/types/index.d.mts": {
+      "checkedAt": 1788700703628,
+      "integrity": "sha512-JS3Bm4F6Gta7OYOHUETl8bOYMRYBbLzhOg18Ktps+xfvyBeSouc24UxV68N09k/+N2HN1/xjBn9KcPzspiUgSw==",
+      "mode": 420,
+      "size": 4864
+    },
+    "dist/node/initiate.d.mts": {
+      "checkedAt": 1788700703629,
+      "integrity": "sha512-zgd5aozGFqxM/EelE98pMs0+rWfge2l+8n8/bxWPfFFacdB9SCXzDxxzjn5VO+Ylpo/rAvJ2RA6/7f5uxpdXmQ==",
+      "mode": 420,
+      "size": 15498
+    },
+    "dist/settings-CWHPzCWS.d.mts": {
+      "checkedAt": 1788700703629,
+      "integrity": "sha512-bnVIcL40IFfldEfXj4agW/+iaoBCko59AtNlZKStOcQN1TozkBO62+ONiqr9zx6Xo8ggJZ1QK7mFURWL46WAkw==",
+      "mode": 420,
+      "size": 27620
+    }
+  }
+}

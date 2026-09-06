@@ -1,0 +1,14 @@
+/**
+ * @description gen uploader
+ * @author wangfupeng
+ */
+import type { IDomEditor } from '../editor/interface';
+import type { IUploadAdapter, IUploadConfig, IUploader } from './interface';
+type IUploadConfigWithAdapter = IUploadConfig & {
+    uploadAdapter: IUploadAdapter;
+};
+type IDefaultUploader = IUploader & {
+    [key: string]: any;
+};
+declare function createUploader<T extends IUploadConfig>(config: T, editor?: IDomEditor): T extends IUploadConfigWithAdapter ? IUploader : IDefaultUploader;
+export default createUploader;

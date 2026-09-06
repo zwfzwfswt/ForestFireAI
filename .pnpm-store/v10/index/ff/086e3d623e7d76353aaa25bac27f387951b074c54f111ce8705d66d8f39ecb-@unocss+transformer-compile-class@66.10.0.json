@@ -1,0 +1,31 @@
+{
+  "name": "@unocss/transformer-compile-class",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700694376,
+      "integrity": "sha512-+hHdh/bSLbV84uFzl7SIiJ2T0/AIq1wqgJoXIs5qVCz9GxinxLANX/jVBp+EbKQ1Igq1QT7jsQVYfqunVk5bIQ==",
+      "mode": 420,
+      "size": 958
+    },
+    "README.md": {
+      "checkedAt": 1788700694377,
+      "integrity": "sha512-65JKVSVrtYPAKEXTqsVVMJ23gNXx83ZcnNsAZwJPpYFcGorGdmP+a2yahU/iJ4GQPIoKjgEy2iG6OBMrC/DGtQ==",
+      "mode": 420,
+      "size": 1590
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700694377,
+      "integrity": "sha512-uM5pOzC4Vyhb5mH/QA2AGwpR2TGJUgIK/dWiQyCI0QVgr59IvDMHxJFxOTdBIaJyetQzSDJissPZRzHv5VHZBA==",
+      "mode": 420,
+      "size": 3140
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700694378,
+      "integrity": "sha512-aSetJudYe/ehcEETWgkd4ES0FjJXEjm4nMRKgt2P7cyHu1UheN3IUC9dRizlRm8vT2bR75mKVab7D6wM+CPBgA==",
+      "mode": 420,
+      "size": 1798
+    }
+  }
+}

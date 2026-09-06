@@ -1,0 +1,64 @@
+import { i as createRpcFunctions, n as createStandaloneInspectorDevframe, r as INSPECTOR_RPC_SCOPE, t as createInspectorDevframe } from "./devframe-DzkWZsOg.mjs";
+import { devframeViteBridge, devframeVitePlugin } from "@devframes/vite/single";
+import { createPluginFromDevframe } from "@vitejs/devtools-kit/node";
+//#region src/index.ts
+const BASE_URL = "/__unocss/";
+const DEVTOOLS_DOCK_BASE_URL = "/__unocss-devtools/";
+const VITE_DEVTOOLS_URL = "/__devtools/";
+function UnocssInspector(ctx) {
+	const inspector = createInspectorDevframe(ctx);
+	let devtoolsActive = false;
+	let invalidateTimer;
+	ctx.onInvalidate(() => {
+		clearTimeout(invalidateTimer);
+		invalidateTimer = setTimeout(() => inspector.notifyInvalidated(), 200);
+	});
+	ctx.onReload(() => inspector.notifyConfigChanged());
+	const events = {
+		name: "unocss:inspector",
+		apply: "serve",
+		async configureServer(server) {
+			await ctx.ready;
+			server.middlewares.use((req, res, next) => {
+				const url = req.url?.split("?")[0];
+				if (url === BASE_URL.slice(0, -1)) {
+					res.statusCode = 302;
+					res.setHeader("Location", BASE_URL);
+					res.end();
+					return;
+				}
+				if (devtoolsActive && (url === BASE_URL || url === `${BASE_URL}index.html`) && req.headers["sec-fetch-dest"] === "document") {
+					res.statusCode = 302;
+					res.setHeader("Location", VITE_DEVTOOLS_URL);
+					res.end();
+					return;
+				}
+				next();
+			});
+		},
+		handleHotUpdate(hmrCtx) {
+			inspector.notifyModuleUpdated({ path: hmrCtx.file });
+		}
+	};
+	const spa = devframeVitePlugin(inspector.definition, { base: BASE_URL });
+	spa.name = "unocss:inspector:spa";
+	const bridge = devframeViteBridge(inspector.definition, {
+		base: BASE_URL,
+		allowedOrigins: false
+	});
+	bridge.name = "unocss:inspector:rpc";
+	return [
+		events,
+		spa,
+		bridge,
+		createPluginFromDevframe(inspector.definition, {
+			name: "unocss:inspector:devtools",
+			base: DEVTOOLS_DOCK_BASE_URL,
+			setup: () => {
+				devtoolsActive = true;
+			}
+		})
+	];
+}
+//#endregion
+export { INSPECTOR_RPC_SCOPE, createInspectorDevframe, createRpcFunctions, createStandaloneInspectorDevframe, UnocssInspector as default };

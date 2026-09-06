@@ -1,0 +1,7 @@
+/**
+ * @description slate 插件 - history
+ */
+import { Editor } from 'slate';
+import { HistoryEditor } from 'slate-history';
+import { IDomEditor } from '../interface';
+export declare const withHistory: <T extends Editor>(editor: T) => T & IDomEditor & HistoryEditor;

@@ -1,0 +1,12 @@
+/**
+ * @description dropPanel class
+ * @author wangfupeng
+ */
+import { Dom7Array } from '../../utils/dom';
+import PanelAndModal from './BaseClass';
+declare class DropPanel extends PanelAndModal {
+    type: string;
+    readonly $elem: Dom7Array;
+    genSelfElem(): Dom7Array | null;
+}
+export default DropPanel;

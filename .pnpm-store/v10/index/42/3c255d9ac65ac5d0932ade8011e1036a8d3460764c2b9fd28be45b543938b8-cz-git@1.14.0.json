@@ -1,0 +1,43 @@
+{
+  "name": "cz-git",
+  "version": "1.14.0",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700680010,
+      "integrity": "sha512-XNKpq/c7Noox7AQCud4uqdP1ni/VpjJaIWWSfF+fQKbH+L21hlFaiu9t0UFPAjDInO/6uKfQ/CPqF3WJjrKBMw==",
+      "mode": 420,
+      "size": 1120
+    },
+    "lib/index.js": {
+      "checkedAt": 1788700680013,
+      "integrity": "sha512-r2WvSQZLbYdm/prBOHNyDrkwS0TzaR81bzSIP493FZhL8VRG4XtOZGHvEAR4UfDMdpWdyro+UwsocLnqW4ce2Q==",
+      "mode": 420,
+      "size": 1804609
+    },
+    "package.json": {
+      "checkedAt": 1788700680014,
+      "integrity": "sha512-0izIyHjdUOqWDOxYLlW9zw8Xqk8I7PYBDaMc5U+9xpBF5SNh8bKxn6trH46ypfxDbeUGobb1UAji13MW6spniQ==",
+      "mode": 420,
+      "size": 1400
+    },
+    "README.md": {
+      "checkedAt": 1788700680016,
+      "integrity": "sha512-B2XapcJ2JvrrxFKdTL16bkGZyGFs7U3Jl4qYEwK8h9Lz82QDjdnScwJLqX6JMflFXLH1FO0+6bRXHYHBwr1V8g==",
+      "mode": 420,
+      "size": 7810
+    },
+    "lib/index.mjs": {
+      "checkedAt": 1788700680017,
+      "integrity": "sha512-JeeM6Qha3Ek3qcb8/LVtLmwNJlNV3JkgrCIDzT0rYgCyVAWQamyyNwUQJNkVBkpSHXwLxwQG+x019oz9VUofeQ==",
+      "mode": 420,
+      "size": 138
+    },
+    "lib/index.d.ts": {
+      "checkedAt": 1788700680017,
+      "integrity": "sha512-EWLBzrkEBJc7pe4NagBMjeefiQRT3tJMmPBF0YCpUa4CA3ZPDUxKt34uVJZrTCxxAP1V/LvPpDoAFx8znYySnA==",
+      "mode": 420,
+      "size": 39362
+    }
+  }
+}

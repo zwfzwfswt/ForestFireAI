@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { createPinia } from "pinia";
+import { ID_INJECTION_KEY, ZINDEX_INJECTION_KEY } from "element-plus";
 import { createSSRApp, createRenderer, ref, nextTick } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { parse, compileScript } from "vue/compiler-sfc";
@@ -23,7 +25,7 @@ function moduleUrl(file) {
   source = ts.transpileModule(source, {
     compilerOptions: { target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.ESNext },
   }).outputText;
-  source = source.replace(/import ["'][^"']+\.css["'];?/g, "");
+  source = source.replace(/import ["'][^"']+(?:\.css|\/style\/css)["'];?/g, "");
   // 浏览器专属 Leaflet 使用可观测替身验证 Vue 卸载、事件和图层行为。
   source = source.replace(
     'import("leaflet")',
@@ -45,7 +47,12 @@ function moduleUrl(file) {
 }
 async function render(file, props = {}) {
   const { default: component } = await import(moduleUrl(resolve(root, file)));
-  return renderToString(createSSRApp(component, props));
+  return renderToString(
+    createSSRApp(component, props)
+      .use(createPinia())
+      .provide(ID_INJECTION_KEY, { prefix: 100, current: 0 })
+      .provide(ZINDEX_INJECTION_KEY, { current: 0 })
+  );
 }
 const { dashboardAlerts, dashboardStats } = await import(moduleUrl(resolve(root, "mock.ts")));
 
@@ -213,6 +220,27 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
     animation = undefined;
   };
   globalThis.__dashboardLeafletTest = {
+    marker: () => ({
+      addTo() {
+        return this;
+      },
+      on() {
+        return this;
+      },
+      off() {
+        return this;
+      },
+      unbindPopup() {
+        return this;
+      },
+      bindPopup() {
+        return this;
+      },
+      closePopup() {
+        return this;
+      },
+    }),
+    divIcon: (options) => options,
     geoJSON: () => ({}),
     map: () => map,
     layerGroup: () => ({
@@ -263,6 +291,7 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
     },
   });
   try {
+    app.use(createPinia());
     app.mount({});
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(state.ready.value, true);

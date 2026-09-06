@@ -227,89 +227,112 @@ async function browserChecks() {
   }
 }
 
-test("Chromium 真实 Vue/Leaflet GIS 工具烟雾验证", { skip: !browser, timeout: 60000 }, async () => {
-  const profile = mkdtempSync(join(tmpdir(), "forestfire-gis-browser-"));
-  const server = await createServer({
-    configFile: false,
-    root: process.cwd(),
-    plugins: [vue()],
-    logLevel: "error",
-    appType: "custom",
-    optimizeDeps: { noDiscovery: true, include: ["vue", "leaflet"] },
-    server: { host: "127.0.0.1", port: 0 },
-  });
-  let child;
-  try {
-    server.middlewares.use(async (req, res, next) => {
-      if (req.url !== "/__gis_test__.html") return next();
-      const html = `<!doctype html><html><head><style>
+test(
+  "Chromium 真实 Vue/Leaflet GIS 与 UAV 资产操作验证",
+  { skip: !browser, timeout: 60000 },
+  async () => {
+    const profile = mkdtempSync(join(tmpdir(), "forestfire-gis-browser-"));
+    const server = await createServer({
+      configFile: false,
+      root: process.cwd(),
+      plugins: [vue()],
+      logLevel: "error",
+      appType: "custom",
+      optimizeDeps: {
+        noDiscovery: true,
+        include: ["vue", "vue-router", "leaflet", "pinia", "element-plus"],
+      },
+      server: { host: "127.0.0.1", port: 0 },
+    });
+    let child;
+    try {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url !== "/__gis_test__.html") return next();
+        const html = `<!doctype html><html><head><style>
       :root { --el-bg-color-overlay: #fff; --el-text-color-primary: #243c35; --el-text-color-secondary: #5d716a; --el-border-color: #ccd8d2; --card-border: #ccd8d2; --card-radius: 8px; --el-color-success: #16a085; --el-color-success-light-9: #e8f7f1; }
       body { margin: 20px; font-family: sans-serif; } #app { width: 1000px; }
+      /* dump-dom 虚拟时钟不驱动所有合成帧；验证弹窗最终状态，禁用测试页过渡。 */
+      *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
       </style></head><body><div id="app"></div><script type="module">
       import { createApp, h, ref, KeepAlive, nextTick } from 'vue';
       import { Map as LeafletMap } from 'leaflet';
+      import { createPinia } from 'pinia';
+      import { createRouter, createMemoryHistory } from 'vue-router';
+      import UavPage from '/src/views/uav/index.vue';
+      import { useUavStore } from '/src/stores/uav.ts';
+      import { runUavBrowserChecks } from '/src/views/uav/testing/browserChecks.mjs';
       import ForestFireMap from '/src/views/dashboard/components/map/ForestFireMap.vue';
       import { baseLayers } from '/src/views/dashboard/components/map/mapConfig.ts';
       // dump-dom 虚拟时钟不保证 compositor 帧，测试关闭动画以确定性验证最终行为。
       LeafletMap.mergeOptions({ zoomAnimation: false, fadeAnimation: false });
       // 本地透明瓦片避免外部请求；只影响本测试浏览器内的模块实例。
       baseLayers.forEach(layer => layer.url = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
-      const active = ref(true); window.gisHarness = { active, nextTick };
-      createApp({ setup: () => () => h(KeepAlive, null, { default: () => active.value ? h(ForestFireMap) : null }) }).mount('#app');
+      const pinia = createPinia(); const store = useUavStore(pinia);
+      const router = createRouter({ history: createMemoryHistory(), routes: [ { path: '/dashboard', component: ForestFireMap }, { path: '/uav/list', component: UavPage } ] });
+      await router.push('/dashboard');
+      const active = ref(true); const view = ref('/dashboard');
+      router.afterEach(to => { view.value = to.path; });
+      window.gisHarness = { active, nextTick };
+      createApp({ setup: () => () => h(KeepAlive, null, { default: () => active.value ? h(view.value === '/dashboard' ? ForestFireMap : UavPage) : null }) }).use(pinia).use(router).mount('#app');
       const result = await (${browserChecks.toString()})();
+      if (!result.error) {
+        const uav = await runUavBrowserChecks({ store, router, nextTick });
+        result.passed.push(...uav.passed); result.error = uav.error; result.buttons = uav.buttons;
+      }
       const output = document.createElement('pre'); output.id = 'gis-test-result'; output.textContent = JSON.stringify(result); document.body.append(output);
       </script></body></html>`;
-      res.setHeader("Content-Type", "text/html");
-      res.end(await server.transformIndexHtml("/__gis_test__.html", html));
-    });
-    await server.listen();
-    const port = server.httpServer.address().port;
-    const output = await new Promise((resolveOutput, reject) => {
-      child = spawn(
-        browser,
-        [
-          "--headless=new",
-          "--disable-gpu",
-          "--no-first-run",
-          "--no-default-browser-check",
-          "--disable-background-networking",
-          `--user-data-dir=${profile}`,
-          "--window-size=1366,900",
-          "--dump-dom",
-          "--virtual-time-budget=15000",
-          `http://127.0.0.1:${port}/__gis_test__.html`,
-        ],
-        { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
-      );
-      const timeout = setTimeout(() => {
-        child.kill();
-        reject(new Error("浏览器测试超过 45 秒"));
-      }, 45000);
-      let stdout = "",
-        stderr = "";
-      child.stdout.on("data", (chunk) => (stdout += chunk));
-      child.stderr.on("data", (chunk) => (stderr += chunk));
-      child.on("error", reject);
-      child.on("close", (code) => {
-        clearTimeout(timeout);
-        if (code === 0) resolveOutput(stdout);
-        else reject(new Error(`浏览器退出 ${code}: ${stderr.slice(-1500)}`));
+        res.setHeader("Content-Type", "text/html");
+        res.end(await server.transformIndexHtml("/__gis_test__.html", html));
       });
-    });
-    const match = output.match(/<pre id="gis-test-result">([^<]*)<\/pre>/);
-    assert.ok(match, "浏览器未输出测试结果，请检查浏览器/Vite 运行环境");
-    const result = JSON.parse(match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
-    assert.equal(result.error, undefined, JSON.stringify(result));
-    assert.equal(result.passed.length, 12);
-  } finally {
-    child?.kill();
-    await server.close();
-    // 只删除本测试创建且位于系统临时目录的独立浏览器配置。
-    if (
-      resolve(profile).startsWith(resolve(tmpdir()) + "\\") ||
-      resolve(profile).startsWith(resolve(tmpdir()) + "/")
-    ) {
-      rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      await server.listen();
+      const port = server.httpServer.address().port;
+      const output = await new Promise((resolveOutput, reject) => {
+        child = spawn(
+          browser,
+          [
+            "--headless=new",
+            "--disable-gpu",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-background-networking",
+            `--user-data-dir=${profile}`,
+            "--window-size=1366,900",
+            "--dump-dom",
+            "--virtual-time-budget=15000",
+            `http://127.0.0.1:${port}/__gis_test__.html`,
+          ],
+          { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
+        );
+        const timeout = setTimeout(() => {
+          child.kill();
+          reject(new Error("浏览器测试超过 45 秒"));
+        }, 45000);
+        let stdout = "",
+          stderr = "";
+        child.stdout.on("data", (chunk) => (stdout += chunk));
+        child.stderr.on("data", (chunk) => (stderr += chunk));
+        child.on("error", reject);
+        child.on("close", (code) => {
+          clearTimeout(timeout);
+          if (code === 0) resolveOutput(stdout);
+          else reject(new Error(`浏览器退出 ${code}: ${stderr.slice(-1500)}`));
+        });
+      });
+      const match = output.match(/<pre id="gis-test-result">([^<]*)<\/pre>/);
+      assert.ok(match, "浏览器未输出测试结果，请检查浏览器/Vite 运行环境");
+      const result = JSON.parse(match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
+      assert.equal(result.error, undefined, JSON.stringify(result));
+      assert.equal(result.passed.length, 19);
+    } finally {
+      child?.kill();
+      await server.close();
+      // 只删除本测试创建且位于系统临时目录的独立浏览器配置。
+      if (
+        resolve(profile).startsWith(resolve(tmpdir()) + "\\") ||
+        resolve(profile).startsWith(resolve(tmpdir()) + "/")
+      ) {
+        rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      }
     }
   }
-});
+);

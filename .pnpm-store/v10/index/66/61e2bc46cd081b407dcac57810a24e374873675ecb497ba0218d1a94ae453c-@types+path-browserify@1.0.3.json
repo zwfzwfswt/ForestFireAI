@@ -1,0 +1,31 @@
+{
+  "name": "@types/path-browserify",
+  "version": "1.0.3",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700675265,
+      "integrity": "sha512-HQaIQk9pwOcyKutyDk4o2a87WnotwYuLGYFW43emGm4FvIJFKPyg+OYaw5sTegKAKf+C5SKa1ACjzCLivbaHrQ==",
+      "mode": 420,
+      "size": 1141
+    },
+    "README.md": {
+      "checkedAt": 1788700675266,
+      "integrity": "sha512-MHs0y84iAP5gXwHg45LrL3ddSkRHLO9sV7VU2xzmS7YvLlkAs82acSe89dydk+S1mcyb5FGOoylAELBpH3VHww==",
+      "mode": 420,
+      "size": 506
+    },
+    "index.d.ts": {
+      "checkedAt": 1788700675267,
+      "integrity": "sha512-kIm9EeEWrekcY7KlQrDrH8TRrO4fBMd5G8aEKhNGNXUlBVcLqXV0NsLMOQydFTAPuCqBsXdHxsYTilJ5FTIN4A==",
+      "mode": 420,
+      "size": 4042
+    },
+    "package.json": {
+      "checkedAt": 1788700675268,
+      "integrity": "sha512-efSlh8NwR6mxTYeZVyqpWlh8Lwg1VwdLxBWUb3AgMtyLhwNd05HMrW79Raui9mVl8bwsvhxY60fGdMMrPu2V1Q==",
+      "mode": 420,
+      "size": 828
+    }
+  }
+}

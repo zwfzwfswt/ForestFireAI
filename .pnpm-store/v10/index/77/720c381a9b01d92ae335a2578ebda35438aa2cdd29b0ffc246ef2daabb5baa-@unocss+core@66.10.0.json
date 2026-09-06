@@ -1,0 +1,31 @@
+{
+  "name": "@unocss/core",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700694524,
+      "integrity": "sha512-gMflw5b9xQ9c46cp2vo8IWRUR10uWgrasbW+Z831BSw5J00kkCD8B2Snu0mXhueZERDzYaDpC83v24qw6t3ZPg==",
+      "mode": 420,
+      "size": 1043
+    },
+    "README.md": {
+      "checkedAt": 1788700694525,
+      "integrity": "sha512-66YyK/8g8ZjlYkVTG3JHf8+ahkTpSiRDuzGPv/mXgWaA2aQp3mFz/wUtaZ2FAd0egEEJI9AfzdYgZukymLggQw==",
+      "mode": 420,
+      "size": 333
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700694526,
+      "integrity": "sha512-rZ6WhIWRUev+t0nIDqCHJie4gU8nqaSuFUU6ZBM2TDXvCmK/gR8S/qxdEjY4B2wsDh+PXYiAMGIRNXXrRriYpQ==",
+      "mode": 420,
+      "size": 47286
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700694527,
+      "integrity": "sha512-ZSV01W6o38g9Q4PoSZO94gmUtJdU5qhkRt1zt8HhtCSY9k6tXpCtI2sxE+95tMLT4LQ/l6tBReGcqNO3VtK1Yg==",
+      "mode": 420,
+      "size": 41523
+    }
+  }
+}

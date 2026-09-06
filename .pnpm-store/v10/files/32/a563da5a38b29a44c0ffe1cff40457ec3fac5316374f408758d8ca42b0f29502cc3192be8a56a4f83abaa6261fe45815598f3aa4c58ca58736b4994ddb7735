@@ -1,0 +1,19 @@
+/**
+ * @description menu entry
+ * @author wangfupeng
+ */
+import BulletedListMenu from './BulletedListMenu';
+import LowerAlphaListMenu from './LowerAlphaListMenu';
+import NumberedListMenu from './NumberedListMenu';
+export declare const bulletedListMenuConf: {
+    key: string;
+    factory(): BulletedListMenu;
+};
+export declare const numberedListMenuConf: {
+    key: string;
+    factory(): NumberedListMenu;
+};
+export declare const numberedListLowerAlphaMenuConf: {
+    key: string;
+    factory(): LowerAlphaListMenu;
+};

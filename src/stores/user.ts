@@ -10,6 +10,7 @@ import { usePermissionStoreHook } from "@/stores/permission";
 import { useDictStoreHook } from "@/stores/dict";
 import { useTagsViewStore } from "@/stores";
 import { cleanupSseServices } from "@/composables";
+import { useUavStore } from "./uav";
 
 export const useUserStore = defineStore("user", () => {
   // 用户信息
@@ -95,6 +96,7 @@ export const useUserStore = defineStore("user", () => {
    * 仅处理用户模块内的状态
    */
   function resetUserState(): void {
+    useUavStore(store).reset();
     AuthStorage.clearAuth();
     userInfo.value = {} as UserInfo;
   }

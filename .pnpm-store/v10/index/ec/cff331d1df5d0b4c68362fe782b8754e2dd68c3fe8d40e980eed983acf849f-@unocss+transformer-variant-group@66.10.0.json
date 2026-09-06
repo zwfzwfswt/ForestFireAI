@@ -1,0 +1,31 @@
+{
+  "name": "@unocss/transformer-variant-group",
+  "version": "66.10.0",
+  "requiresBuild": false,
+  "files": {
+    "package.json": {
+      "checkedAt": 1788700694144,
+      "integrity": "sha512-inVphA42wKfS+OCSBW9s7jNBwenJkauObqcyhkWjJIVd1KajqkXHSTFLVXwV7rnyCbzepbFPRDekSRRuYZ1xyg==",
+      "mode": 420,
+      "size": 955
+    },
+    "README.md": {
+      "checkedAt": 1788700694145,
+      "integrity": "sha512-vPjhEGTrgCHxiO5uCMK/FKSNmubPHBVV7BnU87QyUA8Qc0ngYsAyDmMfEHYle7Z/6yrUpsZHTD5qfpAIpeYAhQ==",
+      "mode": 420,
+      "size": 761
+    },
+    "dist/index.mjs": {
+      "checkedAt": 1788700694146,
+      "integrity": "sha512-s5chA5IQwoWU2CrqZlC0a/YRT/6/5ICwPV06ozBch0auHnMdwKK9KiZfniiZksDMzAD/sMcRaxyMWGskQ1NWMw==",
+      "mode": 420,
+      "size": 662
+    },
+    "dist/index.d.mts": {
+      "checkedAt": 1788700694146,
+      "integrity": "sha512-l9rbq7A/8LCwbirRtjlwgWesYE8INhRFzmmkigBpuNHMAv5qkxNn7+ZrtCKbeMSX4dV/5oHmHLPkD85Y9WrAmw==",
+      "mode": 420,
+      "size": 615
+    }
+  }
+}

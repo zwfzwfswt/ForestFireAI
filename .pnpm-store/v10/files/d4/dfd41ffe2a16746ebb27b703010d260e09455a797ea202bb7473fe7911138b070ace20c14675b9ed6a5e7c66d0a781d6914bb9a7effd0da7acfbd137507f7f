@@ -1,0 +1,267 @@
+import { c as LogLevel, f as MockServerPluginOptions, n as MockOptions, o as MockHttpItem, p as ServerBuildOption, r as MockWebsocketItem, y as ResolvedRecordOptions } from "./index-BE1yNUxG.js";
+import { Matcher } from "picomatch";
+import EventEmitter from "node:events";
+import { CorsOptions } from "cors";
+import { Alias, Connect, Plugin } from "vite";
+import { Server } from "node:http";
+import { Http2SecureServer } from "node:http2";
+//#region src/core/logger.d.ts
+/**
+ * Logger interface
+ *
+ * 日志接口
+ */
+interface Logger {
+  /**
+   * Debug log
+   *
+   * 调试日志
+   */
+  debug: (msg: string, level?: boolean | LogLevel) => void;
+  /**
+   * Info log
+   *
+   * 信息日志
+   */
+  info: (msg: string, level?: boolean | LogLevel) => void;
+  /**
+   * Warning log
+   *
+   * 警告日志
+   */
+  warn: (msg: string, level?: boolean | LogLevel) => void;
+  /**
+   * Error log
+   *
+   * 错误日志
+   */
+  error: (msg: string, level?: boolean | LogLevel) => void;
+}
+/**
+ * Log levels mapping
+ *
+ * 日志级别映射
+ */
+declare const logLevels: Record<LogLevel, number>;
+/**
+ * Create logger instance
+ *
+ * 创建日志实例
+ *
+ * @param prefix - Log prefix / 日志前缀
+ * @param defaultLevel - Default log level / 默认日志级别
+ * @returns Logger instance / 日志实例
+ */
+declare function createLogger(prefix: string, defaultLevel?: LogLevel): Logger;
+//#endregion
+//#region src/core/options.d.ts
+type ResolvedMockServerPluginOptions = Required<Omit<MockServerPluginOptions, "build" | "cors" | "wsPrefix" | "prefix" | "record" | "activeScene">> & {
+  context: string;
+  logger: Logger;
+  alias: Alias[];
+  define: Record<string, any>;
+  proxies: string[];
+  wsProxies: string[];
+  activeScene: string[];
+  build: false | ServerBuildOption;
+  cors: false | CorsOptions;
+  record: ResolvedRecordOptions;
+};
+//#endregion
+//#region src/core/plugin.d.ts
+/**
+ * Create mock dev server plugin
+ *
+ * 创建 Mock 开发服务器插件
+ *
+ * @param options - Plugin options / 插件配置项
+ * @returns Array of Vite plugin objects / Vite 插件对象数组
+ */
+declare function mockDevServerPlugin(options?: MockServerPluginOptions): Plugin[];
+//#endregion
+//#region src/compiler/types.d.ts
+type MockRawData = MockOptions | MockHttpItem | MockWebsocketItem | Record<string, MockOptions | MockHttpItem | MockWebsocketItem>;
+//#endregion
+//#region src/compiler/processData.d.ts
+declare function processRawData(raw: MockRawData, __filepath__: string): MockOptions | MockHttpItem | MockWebsocketItem;
+declare function processMockData(mockList: Map<string, MockHttpItem | MockWebsocketItem | MockOptions> | (MockHttpItem | MockWebsocketItem | MockOptions)[]): Record<string, MockOptions>;
+declare function sortByValidator(mocks: MockOptions): (MockHttpItem | MockWebsocketItem)[];
+//#endregion
+//#region src/compiler/compiler.d.ts
+/**
+ * Mock file loading and compilation, converting to Mock data
+ *
+ * Mock 文件加载编译，并转换为 Mock 数据
+ */
+declare class Compiler extends EventEmitter {
+  /**
+   * Cache for mock modules
+   *
+   * Mock 模块缓存
+   */
+  private moduleCache;
+  /**
+   * Dependencies mapping for mock modules
+   *
+   * Mock 模块依赖映射
+   */
+  private moduleDeps;
+  /**
+   * Current working directory
+   *
+   * 当前工作目录
+   */
+  cwd: string;
+  /**
+   * File watcher for mock files
+   *
+   * Mock 文件监视器
+   */
+  private mockWatcher;
+  /**
+   * File watcher for dependency files
+   *
+   * 依赖文件监视器
+   */
+  private depsWatcher;
+  /**
+   * Whether the project uses ES modules
+   *
+   * 项目是否使用 ES 模块
+   */
+  private isESM;
+  /**
+   * Processed mock data
+   *
+   * 处理后的 Mock 数据
+   */
+  private _mockData;
+  /**
+   * Resolved plugin options
+   *
+   * 解析后的插件配置项
+   */
+  options: ResolvedMockServerPluginOptions;
+  /**
+   * Constructor
+   *
+   * 构造函数
+   *
+   * @param options - Resolved plugin options / 解析后的插件配置项
+   */
+  constructor(options: ResolvedMockServerPluginOptions);
+  /**
+   * Get processed mock data
+   *
+   * 获取处理后的 Mock 数据
+   *
+   * @returns Processed mock data / 处理后的 Mock 数据
+   */
+  get mockData(): Record<string, MockOptions>;
+  /**
+   * Run the compiler
+   *
+   * 运行编译器
+   *
+   * @param watch - Whether to watch for file changes / 是否监视文件变化
+   */
+  run(watch?: boolean): void;
+  /**
+   * Close the compiler and watchers
+   *
+   * 关闭编译器和监视器
+   */
+  close(): void;
+  /**
+   * Load and compile all mock files
+   *
+   * 加载并编译所有 Mock 文件
+   *
+   * @param pattern - Glob pattern to match mock files / 匹配 Mock 文件的 glob 模式
+   * @param ignore - Glob pattern to ignore files / 忽略文件的 glob 模式
+   */
+  private loadAll;
+  /**
+   * Load and compile a mock file
+   *
+   * 加载并编译 Mock 文件
+   *
+   * @param filepath - Path to the mock file / Mock 文件路径
+   */
+  private load;
+  /**
+   * Update mock data from module cache
+   *
+   * 从模块缓存更新 Mock 数据
+   */
+  private updateMockData;
+  /**
+   * Update module dependencies
+   *
+   * 更新模块依赖
+   *
+   * @param filepath - Path to the mock file / Mock 文件路径
+   * @param deps - Dependencies of the mock file / Mock 文件的依赖
+   */
+  private updateModuleDeps;
+  /**
+   * Watch mock entry files
+   *
+   * 监视 Mock 入口文件
+   *
+   * @param isMatch - Function to check if a file matches the include/exclude pattern / 检查文件是否匹配包含/排除模式的函数
+   */
+  watchMockEntry(isMatch: Matcher): void;
+  /**
+   * Watch dependency files
+   *
+   * 监视依赖文件
+   */
+  watchDeps(): void;
+}
+//#endregion
+//#region src/mockHttp/middleware.d.ts
+interface CreateMockMiddlewareOptions extends Pick<ResolvedMockServerPluginOptions, "formidableOptions" | "cookiesOptions" | "bodyParserOptions" | "priority" | "record" | "replay" | "activeScene"> {
+  proxies: string[];
+  logger: Logger;
+  cors: false | CorsOptions;
+}
+/**
+ * Create mock middleware
+ *
+ * 创建 Mock 中间件
+ *
+ * @param compiler - Compiler instance / 编译器实例
+ * @param options - Middleware options / 中间件配置项
+ * @param options.formidableOptions - Formidable options / Formidable 配置项
+ * @param options.bodyParserOptions - Body parser options / 请求体解析配置项
+ * @param options.proxies - Proxy paths / 代理路径
+ * @param options.cookiesOptions - Cookies options / Cookies 配置项
+ * @param options.logger - Logger instance / 日志实例
+ * @param options.priority - Path matching priority / 路径匹配优先级
+ * @param options.cors - CORS options / CORS 配置项
+ * @param options.record - Record options / 录制配置项
+ * @param options.replay - Replay options / 回放配置项
+ * @param options.activeScene - Active scene / 活动场景
+ *
+ * @returns Connect middleware function / Connect 中间件函数
+ */
+declare function createMockMiddleware(compiler: Compiler, { formidableOptions, bodyParserOptions, proxies, cookiesOptions, logger, priority, cors: corsOptions, record, replay, activeScene }: CreateMockMiddlewareOptions): Connect.NextHandleFunction;
+//#endregion
+//#region src/mockWebsocket/server.d.ts
+/**
+ * Mock WebSocket server
+ *
+ * Mock WebSocket 服务器
+ *
+ * @param compiler - Compiler instance / 编译器实例
+ * @param server - HTTP server instance / HTTP 服务器实例
+ * @param options - Resolved plugin options / 解析后的插件配置
+ * @param options.wsProxies - WebSocket proxy prefixes / WebSocket 代理前缀
+ * @param options.cookiesOptions - Cookies options / Cookies 配置项
+ * @param options.logger - Logger instance / 日志实例
+ * @param options.activeScene - Active scene / 当前场景
+ */
+declare function mockWebSocket(compiler: Compiler, server: Server | Http2SecureServer | null, { wsProxies: proxies, cookiesOptions, logger, activeScene }: ResolvedMockServerPluginOptions): void;
+//#endregion
+export { processRawData as a, Logger as c, processMockData as i, createLogger as l, CreateMockMiddlewareOptions as n, sortByValidator as o, createMockMiddleware as r, mockDevServerPlugin as s, mockWebSocket as t, logLevels as u };

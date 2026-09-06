@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { createPinia } from "pinia";
 import { createRenderer, ref, nextTick, h, KeepAlive, createSSRApp } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { compileScript, parse } from "vue/compiler-sfc";
@@ -517,6 +518,7 @@ test("Vue KeepAlive 停用销毁、激活重建 GIS；默认视角读取 mapConf
     await new Promise((resolve) => setImmediate(resolve));
   };
   try {
+    app.use(createPinia());
     app.mount({});
     await flush();
     assert.equal(maps.length, 1);
@@ -550,7 +552,7 @@ test("Vue KeepAlive 停用销毁、激活重建 GIS；默认视角读取 mapConf
     assert.equal(restored.find((s) => s.id === "RoadLayer").opacity, 0.4);
     assert.equal(restored.find((s) => s.id === "WaterSourceLayer").zIndex, 570);
     assert.equal(maps[1].getPane("ff-business-RoadLayer").style.opacity, "0.4");
-    assert.equal(restored.filter((s) => s.status === "ready").length, 6);
+    assert.equal(restored.filter((s) => s.status === "ready").length, 7);
     state.drawing.select("point");
     maps[1].fire("click", { latlng: { lat: 31, lng: 120 } });
     assert.equal(state.drawing.count.value, 1);

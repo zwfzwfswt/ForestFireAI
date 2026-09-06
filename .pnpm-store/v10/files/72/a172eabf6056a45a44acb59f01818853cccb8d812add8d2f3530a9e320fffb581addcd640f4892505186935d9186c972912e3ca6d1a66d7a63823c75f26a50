@@ -1,0 +1,14 @@
+/**
+ * @description create toolbar
+ * @author wangfupeng
+ */
+import { IToolbarConfig } from '../config/interface';
+import { IDomEditor } from '../editor/interface';
+import Toolbar from '../menus/bar/Toolbar';
+import { DOMElement } from '../utils/dom';
+interface ICreateOption {
+    selector: string | DOMElement;
+    config?: Partial<IToolbarConfig>;
+}
+export default function (editor: IDomEditor | null, option: ICreateOption): Toolbar;
+export {};

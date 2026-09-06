@@ -130,6 +130,22 @@ export function createMapLayerRegistry(
   return {
     register,
     registerBusiness,
+    replaceBusiness(id: string, factory: LayerFactory) {
+      const state = business(id);
+      const group = groups.get(id);
+      if (!group) throw new Error("业务图层尚未加载");
+      // 先构造并验证，再替换；工厂失败不清除当前内容或其他业务组。
+      const result = factory(state.pane);
+      if (!Number.isInteger(result.featureCount) || result.featureCount < 0)
+        throw new Error("要素数量无效");
+      group.clearLayers();
+      group.addLayer(result.layer);
+      state.featureCount = result.featureCount;
+      state.status = result.featureCount ? "ready" : "empty";
+      state.error = "";
+      sync(state);
+      publish();
+    },
     list,
     getState: (id: string) => (states.has(id) ? Object.freeze({ ...states.get(id)! }) : undefined),
     get: (id: string) => groups.get(id),

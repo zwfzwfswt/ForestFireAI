@@ -1,0 +1,74 @@
+{
+  "name": "@pengzhanbo/utils",
+  "version": "3.11.0",
+  "description": "a personal utils package",
+  "keywords": [
+    "utils"
+  ],
+  "homepage": "https://github.com/pengzhanbo/utils",
+  "bugs": "https://github.com/pengzhanbo/utils/issues",
+  "license": "MIT",
+  "author": "pengzhanbo <q942450674@outlook.com> (https://github.com/pengzhanbo)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pengzhanbo/utils.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "devDependencies": {
+    "@pengzhanbo/oxc-config": "^2.9.0",
+    "@pengzhanbo/tsconfig": "^2.9.0",
+    "@types/node": "^26.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "bumpp": "^12.2.0",
+    "cross-env": "^10.1.0",
+    "http-server": "^14.1.1",
+    "js-tokens": "^10.0.0",
+    "nano-staged": "^1.0.2",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "simple-git-hooks": "^2.13.1",
+    "tsdown": "^0.22.14",
+    "typedoc": "^0.28.20",
+    "typedoc-github-theme": "^0.4.0",
+    "typedoc-plugin-coverage": "^4.0.3",
+    "typedoc-plugin-mdn-links": "^5.1.1",
+    "typedoc-plugin-missing-exports": "^4.1.4",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "./node_modules/.bin/nano-staged --allow-empty"
+  },
+  "nano-staged": {
+    "*.{js,ts,mjs,cjs}": "pnpm run lint",
+    "*": "oxfmt --no-error-on-unmatched-pattern",
+    "*.{js,ts}": "vitest related --run"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint": "oxlint . --type-check --type-aware && oxfmt . --check",
+    "lint:action": "oxlint . --type-check --type-aware --format=github && oxfmt . --check",
+    "format": "oxlint . --type-check --type-aware --fix && oxfmt .",
+    "test": "cross-env TZ=Etc/UTC vitest --coverage",
+    "test:unit": "cross-env TZ=Etc/UTC vitest run --coverage",
+    "test:bench": "cross-env TZ=Etc/UTC vitest bench",
+    "test:bench:json": "cross-env TZ=Etc/UTC vitest bench --outputJson=benchmark-results.json",
+    "release:publish": "pnpm publish --provenance --access public",
+    "release": "bumpp package.json jsr.json --commit \"build: publish v%s\" --push --tag --all",
+    "docs:dev": "typedoc --watch",
+    "docs:build": "typedoc",
+    "docs:preview": "http-server docs/dist"
+  }
+}

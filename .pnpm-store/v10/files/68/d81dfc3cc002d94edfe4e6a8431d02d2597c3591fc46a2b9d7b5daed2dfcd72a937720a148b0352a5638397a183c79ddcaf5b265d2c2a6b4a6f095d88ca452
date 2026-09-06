@@ -1,0 +1,4 @@
+/**
+ * @description indent target matcher
+ */
+export declare function isIndentTargetElement(node: unknown): boolean;

@@ -1,0 +1,61 @@
+{
+  "name": "pinia",
+  "version": "4.0.3",
+  "requiresBuild": false,
+  "files": {
+    "dist/pinia.esm-browser.js": {
+      "checkedAt": 1788700674798,
+      "integrity": "sha512-HakKY+RyDYm0WFAHm+ueZVrpFoBqFAZ5Tuf+Cz/uiFEir/b2z5aD9bmq64CGPgTBCflHNZWKt3LH8qHrkGN8gw==",
+      "mode": 420,
+      "size": 48222
+    },
+    "dist/pinia.esm-browser.prod.js": {
+      "checkedAt": 1788700674800,
+      "integrity": "sha512-2/GjlEO+Coaew3YRCCfeazovihzLFFLn02m+u+rOAqDjkeuF3yHIfbCibvYZ10zEPLukrHrDDHnxuDAyvdEr6w==",
+      "mode": 420,
+      "size": 5226
+    },
+    "dist/pinia.iife.js": {
+      "checkedAt": 1788700674801,
+      "integrity": "sha512-PcWeB1zlYDa2dL8WLq6RIMOZMRjVhF2F51cdRJTiXCrWTnAprPUT1l+uc7uQ+KeI4+CoFd5XldLFfJoHZd7sQA==",
+      "mode": 420,
+      "size": 32208
+    },
+    "dist/pinia.iife.prod.js": {
+      "checkedAt": 1788700674802,
+      "integrity": "sha512-YnJq868B2PalPqnz2DWvPNuXL9Mi3gzJi43uljAf07F9H0UjC4Dp/Wz6LpFWbXUTwaFZLqFhKhiKJEMvZbJcoA==",
+      "mode": 420,
+      "size": 5413
+    },
+    "dist/pinia.js": {
+      "checkedAt": 1788700674803,
+      "integrity": "sha512-pV4YI3W/CCBpFsengXVytxvFwrWYtqLN+2JkKxlYWLHraN6YOL5TBbU2BfSQWlbglAER9HZBIbhRucuEjsvCkw==",
+      "mode": 420,
+      "size": 50675
+    },
+    "package.json": {
+      "checkedAt": 1788700674804,
+      "integrity": "sha512-IWyK0XNeygl4cTgCxndkIpyWrycJteCD7ltqVH9cybIegCMa+P4ijazWnSHFJX1avQ2EDdSnM5R8nBzmkT7I1w==",
+      "mode": 420,
+      "size": 1810
+    },
+    "README.md": {
+      "checkedAt": 1788700674805,
+      "integrity": "sha512-fuZLO3wsCVkzoWo4X5dBbEQQi1W2LW9GmhThCllY0LICVDiKEkCo67CAPXhP0e62PgX9Lg9j03Oim+yA4fwD3w==",
+      "mode": 420,
+      "size": 6702
+    },
+    "dist/pinia.d.ts": {
+      "checkedAt": 1788700674806,
+      "integrity": "sha512-bpCtsPoc9RXOcekxb5yzYBFKM0/gagP3z9VbIuxMGM5jd/uJ2BebyRt61Eft55qCElwvo6AHw+d3CQAsLPgS+g==",
+      "mode": 420,
+      "size": 36588
+    },
+    "LICENSE": {
+      "checkedAt": 1788700674807,
+      "integrity": "sha512-Inp1VuBCl8xOK0nk/z10W0CU6TFtZnPOG/gFPHz7paqYzvF6iCVYiVfaohpFtVBjXDXqoI9BOE76fkKdf39MTQ==",
+      "mode": 420,
+      "size": 1100
+    }
+  }
+}

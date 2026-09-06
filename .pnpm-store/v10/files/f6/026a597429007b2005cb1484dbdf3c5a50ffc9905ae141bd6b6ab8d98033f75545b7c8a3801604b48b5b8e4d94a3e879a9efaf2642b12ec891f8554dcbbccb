@@ -1,0 +1,285 @@
+import { C as MockRequest, D as GetCookieOption, E as CookiesOption, O as SetCookieOption, S as Method, T as ResponseBody, _ as RecordedRequest, a as MockErrorConfig, b as ExtraRequest, c as LogLevel, d as MockMatchSpecialPriority, f as MockServerPluginOptions, g as RecordedReq, h as RecordedMeta, i as WebSocketSetupContext, l as LogType, m as RecordOptions, n as MockOptions, o as MockHttpItem, p as ServerBuildOption, r as MockWebsocketItem, s as BodyParserOptions, t as FormidableFile, u as MockMatchPriority, v as RecordedRes, w as MockResponse, x as Headers, y as ResolvedRecordOptions } from "./index-BE1yNUxG.js";
+import { Transform } from "node:stream";
+import { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from "node:http";
+//#region src/helpers/createSSEStream.d.ts
+/**
+ * Server-sent events message interface
+ *
+ * Server-sent events 消息接口
+ */
+interface SSEMessage {
+  /**
+   * Message data
+   *
+   * 消息数据
+   */
+  data?: string | object;
+  /**
+   * Comment
+   *
+   * 注释
+   */
+  comment?: string;
+  /**
+   * Event name
+   *
+   * 事件名称
+   */
+  event?: string;
+  /**
+   * Event ID
+   *
+   * 事件 ID
+   */
+  id?: string;
+  /**
+   * Retry interval
+   *
+   * 重试间隔
+   */
+  retry?: number;
+}
+/**
+ * Write headers interface
+ *
+ * 写入头信息接口
+ */
+interface WriteHeaders {
+  /**
+   * Write HTTP headers
+   *
+   * 写入 HTTP 头信息
+   */
+  writeHead?: (statusCode: number, headers?: OutgoingHttpHeaders) => WriteHeaders;
+  /**
+   * Flush headers
+   *
+   * 刷新头信息
+   */
+  flushHeaders?: () => void;
+}
+/**
+ * Header stream type
+ *
+ * 头信息流类型
+ */
+type HeaderStream = NodeJS.WritableStream & WriteHeaders;
+/**
+ * Transforms "messages" to W3C event stream content.
+ * See https://html.spec.whatwg.org/multipage/server-sent-events.html
+ * A message is an object with one or more of the following properties:
+ * - data (String or object, which gets turned into JSON)
+ * - event
+ * - id
+ * - retry
+ * - comment
+ *
+ * If constructed with a HTTP Request, it will optimise the socket for streaming.
+ * If this stream is piped to an HTTP Response, it will set appropriate headers.
+ *
+ * 将 "messages" 转换为 W3C 事件流内容。
+ * 参见 https://html.spec.whatwg.org/multipage/server-sent-events.html
+ * 消息是一个具有以下一个或多个属性的对象：
+ * - data (字符串或对象，会被转换为 JSON)
+ * - event
+ * - id
+ * - retry
+ * - comment
+ *
+ * 如果使用 HTTP 请求构造，它将优化套接字以进行流式传输。
+ * 如果此流被管道传输到 HTTP 响应，它将设置适当的头信息。
+ */
+declare class SSEStream extends Transform {
+  /**
+   * Constructor
+   *
+   * 构造函数
+   *
+   * @param req - HTTP request object / HTTP 请求对象
+   */
+  constructor(req: IncomingMessage);
+  /**
+   * Pipe the stream to a destination
+   *
+   * 将流管道传输到目标
+   *
+   * @template T - Type of destination stream / 目标流的类型
+   * @param destination - Destination stream / 目标流
+   * @param options - Pipe options / 管道选项
+   * @param options.end - Whether to end the stream after piping / 是否在管道传输后结束流
+   * @returns Destination stream / 目标流
+   */
+  pipe<T extends HeaderStream>(destination: T, options?: {
+    end?: boolean;
+  }): T;
+  /**
+   * Transform message to SSE format
+   *
+   * 将消息转换为 SSE 格式
+   *
+   * @param message - SSE message / SSE 消息
+   * @param encoding - Encoding / 编码
+   * @param callback - Callback function / 回调函数
+   */
+  _transform(message: SSEMessage, encoding: string, callback: (error?: (Error | null), data?: any) => void): void;
+  /**
+   * Write message to the stream
+   *
+   * 向流写入消息
+   *
+   * @param message - SSE message / SSE 消息
+   * @param encoding - Encoding / 编码
+   * @param cb - Callback function / 回调函数
+   * @returns Whether the write was successful / 写入是否成功
+   */
+  write(message: SSEMessage, encoding?: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;
+  /**
+   * Write message to the stream
+   *
+   * 向流写入消息
+   *
+   * @param message - SSE message / SSE 消息
+   * @param cb - Callback function / 回调函数
+   * @returns Whether the write was successful / 写入是否成功
+   */
+  write(message: SSEMessage, cb?: (error: Error | null | undefined) => void): boolean;
+  /**
+   * Destroy the stream
+   *
+   * 销毁流
+   *
+   * @param error - Error object / 错误对象
+   * @returns This stream / 此流
+   */
+  destroy(error?: Error): this;
+}
+/**
+ * Create a Server-sent events write stream for simulating EventSource
+ *
+ * 创建一个 Server-sent events 写入流，用于支持模拟 EventSource
+ *
+ * @example
+ * ```ts
+ * import { createSSEStream, defineMock } from 'vite-plugin-mock-dev-server'
+ *
+ * export default defineMock({
+ *   url: '/api',
+ *   response: (req, res) => {
+ *     const sse = createSSEStream(req, res)
+ *     sse.write({ event: 'message', data: { message: 'hello world' } })
+ *   }
+ * })
+ * ```
+ *
+ * @param req - HTTP request object / HTTP 请求对象
+ * @param res - HTTP response object / HTTP 响应对象
+ * @returns SSE stream instance / SSE 流实例
+ */
+declare function createSSEStream(req: IncomingMessage, res: ServerResponse): SSEStream;
+//#endregion
+//#region src/helpers/defineMock.d.ts
+/**
+ * Mock config Type helper
+ *
+ * mock配置 类型帮助函数
+ * @param config see config docs:
+ * {@link https://vite-plugin-mock-dev-server.netlify.app/guide/mock-config en-US DOC} |
+ * {@link https://vite-plugin-mock-dev-server.netlify.app/zh/guide/mock-config zh-CN DOC}
+ *
+ * @example
+ * Mock Http Request
+ * ```ts
+ * export default defineMock({
+ *   url: '/api/example',
+ *   method: ['GET', 'POST'],
+ *   body: { a: 1 },
+ * })
+ * ```
+ * ```ts
+ * export default defineMock({
+ *   url: '/api/example',
+ *   method: 'GET',
+ *   body: ({ query }) => ({ a: 1, b: query.b }),
+ * })
+ * ```
+ * @example
+ * Mock WebSocket
+ * ```ts
+ * export default defineMock({
+ *   url: '/socket.io',
+ *   ws: true,
+ *   setup(wss) {
+ *     wss.on('connection', (ws) => {
+ *       ws.on('message', (rawData) => console.log(rawData))
+ *       ws.send('data')
+ *     })
+ *   },
+ * })
+ * ```
+ */
+declare function defineMock(config: MockHttpItem): MockHttpItem;
+declare function defineMock(config: MockWebsocketItem): MockWebsocketItem;
+declare function defineMock(config: MockOptions): MockOptions;
+/**
+ * Return a custom defineMock function to support preprocessing of mock config.
+ *
+ * 返回一个自定义的 defineMock 函数，用于支持对 mock config 的预处理。
+ * @param transformer preprocessing function
+ * @example
+ * ```ts
+ * const definePostMock = createDefineMock((mock) => {
+ *   mock.url = '/api/post/' + mock.url
+ * })
+ * export default definePostMock({
+ *   url: 'list',
+ *   body: [{ title: '1' }, { title: '2' }],
+ * })
+ * ```
+ */
+declare function createDefineMock(transformer: (mock: MockHttpItem | MockWebsocketItem) => MockHttpItem | MockWebsocketItem | void): typeof defineMock;
+//#endregion
+//#region src/helpers/defineMockData.d.ts
+/**
+ * Options for defineMockData
+ *
+ * defineMockData 的选项
+ */
+interface DefineMockDataOptions {
+  /**
+   * Whether to persist the data value on HMR (Hot Module Replacement).
+   *
+   * 热更新时是否保持数据值
+   *
+   * @default false
+   */
+  persistOnHMR?: boolean;
+}
+/**
+ * Mock data type with getter, setter, and value property
+ *
+ * 带有 getter、setter 和 value 属性的 Mock 数据类型
+ *
+ * @template T - Type of mock data / Mock 数据的类型
+ */
+type MockData<T = any> = readonly [() => T, (val: T | ((val: T) => T | void)) => void] & {
+  /**
+   * Current value
+   *
+   * 当前值
+   */
+  value: T;
+};
+/**
+ * Define mock data with memory-based sharing mechanism
+ *
+ * 定义带有基于内存的共享机制的 Mock 数据
+ *
+ * @template T - Type of mock data / Mock 数据的类型
+ * @param key - Unique key for mock data / Mock 数据的唯一键
+ * @param initialData - Initial data value / 初始数据值
+ * @param options - Options / 选项
+ * @returns MockData object with getter, setter, and value property / 带有 getter、setter 和 value 属性的 MockData 对象
+ */
+declare function defineMockData<T = any>(key: string, initialData: T, options?: DefineMockDataOptions): MockData<T>;
+//#endregion
+export { type BodyParserOptions, type CookiesOption, DefineMockDataOptions, type ExtraRequest, type FormidableFile, type GetCookieOption, HeaderStream, type Headers, type LogLevel, type LogType, type Method, MockData, type MockErrorConfig, type MockHttpItem, type MockMatchPriority, type MockMatchSpecialPriority, type MockOptions, type MockRequest, type MockResponse, type MockServerPluginOptions, type MockWebsocketItem, type RecordOptions, type RecordedMeta, type RecordedReq, type RecordedRequest, type RecordedRes, type ResolvedRecordOptions, type ResponseBody, SSEMessage, type ServerBuildOption, type SetCookieOption, type WebSocketSetupContext, createDefineMock, createSSEStream, defineMock, defineMockData };

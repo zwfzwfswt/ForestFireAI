@@ -1,0 +1,31 @@
+{
+  "name": "@types/leaflet",
+  "version": "1.9.22",
+  "requiresBuild": false,
+  "files": {
+    "LICENSE": {
+      "checkedAt": 1788700679747,
+      "integrity": "sha512-HQaIQk9pwOcyKutyDk4o2a87WnotwYuLGYFW43emGm4FvIJFKPyg+OYaw5sTegKAKf+C5SKa1ACjzCLivbaHrQ==",
+      "mode": 420,
+      "size": 1141
+    },
+    "README.md": {
+      "checkedAt": 1788700679748,
+      "integrity": "sha512-IW16JMv9BtqH6HVKNqqk2FLl+w2nXybtVctvUdsYDBbpQ/yudh8E0gQ7h0TUjfkrjzamjginsdD4ToPl/+OvuA==",
+      "mode": 420,
+      "size": 864
+    },
+    "index.d.ts": {
+      "checkedAt": 1788700679749,
+      "integrity": "sha512-ztH1Pcmz8j3umCNQ5zPw26AoK7VoWxqUFN4OJ+OcsWUo9EalAXBUkAIKDhGvQvewbK7kYZxI3TRxdktLeBVa2w==",
+      "mode": 420,
+      "size": 108941
+    },
+    "package.json": {
+      "checkedAt": 1788700679750,
+      "integrity": "sha512-Czg+Z3VOVeSFXtKL7KLj4UkslGXmzQNcug+0XEWfP7TUVX0PIDVU1LDoAcSa9l1kdByrZ4feE8E3BjbLmxMSQQ==",
+      "mode": 420,
+      "size": 1925
+    }
+  }
+}

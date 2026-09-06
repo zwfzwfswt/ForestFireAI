@@ -1,0 +1,58 @@
+{
+  "name": "@vitejs/devtools-kit",
+  "type": "module",
+  "version": "0.7.2",
+  "description": "Vite DevTools Kit",
+  "author": "VoidZero Inc.",
+  "license": "MIT",
+  "homepage": "https://github.com/vitejs/devtools#readme",
+  "repository": {
+    "directory": "packages/kit",
+    "type": "git",
+    "url": "git+https://github.com/vitejs/devtools.git"
+  },
+  "bugs": "https://github.com/vitejs/devtools/issues",
+  "keywords": [
+    "vite",
+    "devtools",
+    "kit"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js",
+    "./constants": "./dist/constants.js",
+    "./node": "./dist/node/index.js",
+    "./utils/events": "./dist/utils/events.js",
+    "./utils/nanoid": "./dist/utils/nanoid.js",
+    "./utils/shared-state": "./dist/utils/shared-state.js",
+    "./utils/when": "./dist/utils/when.js",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "peerDependencies": {
+    "vite": "*"
+  },
+  "dependencies": {
+    "@devframes/hub": "^0.9.12",
+    "@devframes/json-render": "^0.9.12",
+    "devframe": "^0.9.12",
+    "local-pkg": "^1.2.1",
+    "mlly": "^1.8.2",
+    "nostics": "^1.2.0",
+    "nypm": "^0.6.9"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.14",
+    "ua-parser-modern": "^0.1.1",
+    "vite": "^8.2.2"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "watch": "tsdown --watch"
+  }
+}

@@ -1,0 +1,1054 @@
+import { Buffer } from "node:buffer";
+import { CorsOptions } from "cors";
+import { Readable } from "node:stream";
+import { Options } from "co-body";
+import formidable from "formidable";
+import { WebSocketServer } from "ws";
+import { Connect } from "vite";
+import http from "node:http";
+//#region src/types/cookies.d.ts
+interface CookiesOption {
+  keys?: string[];
+  secure?: boolean;
+}
+interface SetCookieOption {
+  /**
+   * a number representing the milliseconds from `Date.now()` for expiry
+   *
+   * 表示从 `Date.now()` 起至过期的毫秒数
+   */
+  maxAge?: number;
+  /**
+   * a Date object indicating the cookie's expiration
+   * date (expires at the end of session by default).
+   *
+   * 一个指示cookie过期时间的 Date 对象（默认在会话结束时过期）。
+   */
+  expires?: Date;
+  /**
+   * a string indicating the path of the cookie (`/` by default).
+   *
+   * 一个指示cookie路径的字符串（默认为 `/`）。
+   */
+  path?: string;
+  /**
+   * a string indicating the domain of the cookie (no default).
+   *
+   * 表示 Cookie 域的字符串（无默认值）。
+   */
+  domain?: string;
+  /**
+   * a boolean indicating whether the cookie is only to be sent
+   * over HTTPS (false by default for HTTP, true by default for HTTPS).
+   *
+   * 一个布尔值，指示该 Cookie 是否仅通过 HTTPS 发送（HTTP 默认为 false，HTTPS 默认为 true）。
+   */
+  secure?: boolean;
+  /**
+   * a boolean indicating whether the cookie is only to be sent over HTTP(S),
+   * and not made available to client JavaScript (true by default).
+   *
+   * 一个布尔值，指示该 cookie 是否仅通过HTTP(S)发送，而不对客户端JavaScript开放（默认为true）。
+   */
+  httpOnly?: boolean;
+  /**
+   * a boolean or string indicating whether the cookie is a "same site" cookie (false by default).
+   * This can be set to 'strict', 'lax', or true (which maps to 'strict').
+   *
+   * 一个布尔值或字符串，用于指示该cookie是否为“同站”cookie（默认为false）。
+   * 可将其设置为'strict'、'lax'或true（true会映射为'strict'）。
+   */
+  sameSite?: "strict" | "lax" | "none" | boolean;
+  /**
+   * a boolean indicating whether the cookie is to be signed (false by default).
+   * If this is true, another cookie of the same name with the .sig suffix
+   * appended will also be sent, with a 27-byte url-safe base64 SHA1 value
+   * representing the hash of cookie-name=cookie-value against the first Keygrip key.
+   * This signature key is used to detect tampering the next time a cookie is received.
+   *
+   * 一个布尔值，指示cookie是否需签名（默认为false）。
+   * 若设为true，将同时发送另一个同名但附加 `.sig` 后缀的 cookie，其值为 27 字节的URL安全型 base64 SHA1哈希值，
+   * 该哈希由cookie名称=cookie值的字符串与首个 Keygrip 密钥计算生成。
+   * 此签名密钥用于在下次接收cookie时检测数据是否被篡改。
+   */
+  signed?: boolean;
+  /**
+   * a boolean indicating whether to overwrite previously set
+   * cookies of the same name (false by default). If this is true,
+   * all cookies set during the same request with the same
+   * name (regardless of path or domain) are filtered out of
+   * the Set-Cookie header when setting this cookie.
+   *
+   * 一个布尔值，指示是否覆盖先前设置的同名Cookie（默认为false）。
+   * 若设为true，当设置此Cookie时，在同一请求期间设置的所有同名Cookie（无论路径或域）
+   * 都将从Set-Cookie标头中过滤掉。
+   */
+  overwrite?: boolean;
+  /**
+   * a string indicating the cookie priority.
+   * This can be set to 'low', 'medium', or 'high'.
+   *
+   * 表示Cookie优先级的字符串。可设置为'low'、'medium'或'high'。
+   */
+  priority?: "low" | "medium" | "high";
+  /**
+   * a boolean indicating whether to partition the cookie in Chrome
+   * for the CHIPS Update (false by default). If this is true,
+   * Cookies from embedded sites will be partitioned
+   * and only readable from the same top level site from which it was created.
+   *
+   * 一个布尔值，指示是否在Chrome中为CHIPS更新对Cookie进行分区（默认为false）。
+   * 若设为true，来自嵌入式站点的Cookie将被分区，且仅可从创建它的同一顶级站点读取。
+   */
+  partitioned?: boolean;
+}
+interface GetCookieOption {
+  signed: boolean;
+}
+//#endregion
+//#region src/types/http.d.ts
+type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "TRACE" | "OPTIONS";
+type Headers = http.IncomingHttpHeaders;
+type ResponseBody = Record<string, any> | any[] | string | number | Readable | Buffer | null;
+/**
+ * 扩展 request，添加额外的属性和方法
+ */
+interface ExtraRequest {
+  /**
+   * The query string located after `?` in the request address has been parsed into JSON.
+   *
+   * 请求地址中位于 `?` 后面的 queryString，已解析为 json
+   */
+  query: Record<string, any>;
+  /**
+   * The queryString located after `?` in the referer request has been parsed as JSON.
+   *
+   * 请求 referer 中位于 `?` 后面的 queryString，已解析为 json
+   */
+  refererQuery: Record<string, any>;
+  /**
+   * Body data in the request
+   *
+   * 请求体中 body 数据
+   */
+  body: Record<string, any>;
+  /**
+   * The params parameter parsed from the `/api/id/:id` in the request address.
+   *
+   * 请求地址中，`/api/id/:id` 解析后的 params 参数
+   */
+  params: Record<string, any>;
+  /**
+   * headers data in the request
+   * 请求体中 headers
+   */
+  headers: Headers;
+  /**
+   * Get the cookie carried in the request.
+   *
+   * 获取 请求中携带的 cookie
+   * @see [cookies](https://github.com/pillarjs/cookies#cookiesgetname--options)
+   */
+  getCookie: (name: string, options?: GetCookieOption) => string | void;
+}
+type MockRequest = Connect.IncomingMessage & ExtraRequest;
+type MockResponse = http.ServerResponse<http.IncomingMessage> & {
+  /**
+   * Set cookie in response
+   *
+   * 向请求响应中设置 cookie
+   * @see [cookies](https://github.com/pillarjs/cookies#cookiessetname--values--options)
+   */
+  setCookie: (name: string, value: string, options?: SetCookieOption) => void;
+};
+//#endregion
+//#region src/types/record.d.ts
+/**
+ * Record configuration options
+ *
+ * 录制配置选项
+ */
+interface RecordOptions {
+  /**
+   * Whether to enable the record feature
+   * - true: Enable, automatically record proxy responses
+   * - false: Disable (default)
+   *
+   * 是否启用录制功能
+   * - true: 启用，自动录制 proxy 响应
+   * - false: 禁用（默认）
+   *
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * Filter requests to record
+   * - Function: Custom filter function, return true to record
+   * - Object: Include/exclude patterns with glob or path-to-regexp mode
+   *
+   * 过滤要录制的请求
+   * - 函数：自定义过滤函数，返回 true 表示录制
+   * - 对象：包含/排除模式，支持 glob 或 path-to-regexp 模式
+   *
+   * @example
+   * ```ts
+   * // Record all requests
+   * filter: (req) => true
+   * // Record requests using glob pattern
+   * filter: { mode: 'glob', include: '/api/**' }
+   * // Record requests using path-to-regexp pattern
+   * filter: { mode: 'path-to-regexp', include: '/api/:id' }
+   * ```
+   */
+  filter?: ((req: RecordedReq) => boolean) | {
+    /**
+     * Include the request links that need to be recorded
+     *
+     * String: Glob pattern or path-to-regexp pattern
+     * (Use the mode option to set the mode, default is glob)
+     *
+     * 包含需要录制的请求链接
+     *
+     * glob 模式或 path-to-regexp 模式
+     * (使用 mode 选项设置模式，默认为 glob)
+     */
+    include?: string | string[];
+    /**
+     * Exclude request links that do not need to be recorded
+     *
+     * String: Glob pattern or path-to-regexp pattern
+     * (Use the mode option to set the mode, default is glob)
+     *
+     * 排除不需要录制的请求链接
+     *
+     * glob 模式或 path-to-regexp 模式
+     * (使用 mode 选项设置模式，默认为 glob)
+     */
+    exclude?: string | string[];
+    /**
+     * Matching mode for include/exclude patterns
+     * - 'glob': Glob pattern matching (default)
+     * - 'path-to-regexp': Path-to-regexp pattern matching
+     *
+     * 包含/排除模式的匹配模式
+     * - 'glob': glob 模式匹配（默认）
+     * - 'path-to-regexp': path-to-regexp 模式匹配
+     */
+    mode: "glob" | "path-to-regexp";
+  };
+  /**
+   * Directory to store recorded data
+   * Relative to project root
+   *
+   * 录制数据存储目录
+   * 相对于项目根目录
+   *
+   * @default 'mock/.recordings'
+   */
+  dir?: string;
+  /**
+   * Whether to overwrite existing recorded data
+   * - true: Overwrite old data for the same request (default)
+   * - false: Keep old data, do not record new data
+   *
+   * 是否覆盖已有录制数据
+   * - true: 相同请求覆盖旧数据（默认）
+   * - false: 保留旧数据，不录制新数据
+   *
+   * @default true
+   */
+  overwrite?: boolean;
+  /**
+   * Expiration time for recorded data in seconds
+   * - 0: Never expire (default)
+   * - Positive number: Expire after specified seconds
+   *
+   * 录制数据过期时间（秒）
+   * - 0: 永不过期（默认）
+   * - 正数：指定秒数后过期
+   *
+   * @default 0
+   */
+  expires?: number;
+  /**
+   * Status codes to record
+   * - Empty array: Record all status codes (default)
+   * - Specify one or more status codes to filter
+   *
+   * 要录制的状态码
+   * - 为空数组时记录所有状态码（默认）
+   * - 指定一个或多个状态码进行过滤
+   *
+   * @default []
+   */
+  status?: number | number[];
+  /**
+   * Should a .gitignore be added to the recording directory
+   * - true: Add (default)
+   * - false: Do not add
+   *
+   * 是否在录制目录中添加 .gitignore
+   * - true: 添加（默认）
+   * - false: 不添加
+   *
+   * @default true
+   */
+  gitignore?: boolean;
+}
+interface RecordedMeta {
+  /**
+   * Recording timestamp
+   *
+   * 录制数据创建时间戳
+   */
+  timestamp: number;
+  /**
+   * Recorded data create time
+   *
+   * 录制数据创建时间
+   */
+  createAt: string;
+  /**
+   * Recorded data file path
+   *
+   * 录制数据文件路径
+   */
+  filepath: string;
+  /**
+   * Reference the source of the original request
+   *
+   * 对原始请求的来源引用
+   */
+  referer?: string;
+}
+interface RecordedReq {
+  /**
+   * Request method
+   *
+   * 请求方法
+   */
+  method: string;
+  /**
+   * Request pathname
+   *
+   * 请求路径
+   */
+  pathname: string;
+  /**
+   * Request query parameters
+   *
+   * 请求参数
+   */
+  query: Record<string, any>;
+  /**
+   * Request body
+   *
+   * 请求体
+   */
+  body: unknown;
+  /**
+   * Request body type
+   *
+   * 请求体类型
+   */
+  bodyType: string;
+}
+interface RecordedRes {
+  /**
+   * Response status code
+   *
+   * 响应状态码
+   */
+  status: number;
+  /**
+   * Response status text
+   *
+   * 响应状态文本
+   */
+  statusText: string;
+  /**
+   * Response headers
+   *
+   * 响应头
+   */
+  headers: Record<string, string>;
+  /**
+   * Response body
+   *
+   * 响应体
+   */
+  body: string;
+}
+/**
+ * Recorded request data structure
+ *
+ * 录制的请求数据结构
+ */
+interface RecordedRequest {
+  /**
+   * Recorded request metadata
+   *
+   * 录制请求元数据
+   */
+  meta: RecordedMeta;
+  /**
+   * Recorded request data
+   *
+   * 录制请求数据
+   */
+  req: RecordedReq;
+  /**
+   * Recorded response data
+   *
+   * 录制响应数据
+   */
+  res: RecordedRes;
+}
+/**
+ * Resolved record options with all fields required
+ *
+ * 解析后的录制配置选项，所有字段为必填
+ */
+interface ResolvedRecordOptions extends Omit<Required<RecordOptions>, "status"> {
+  cwd: string;
+  status: number[];
+}
+//#endregion
+//#region src/types/options.d.ts
+type BodyParserOptions = Options & {
+  jsonLimit?: string | number;
+  formLimit?: string | number;
+  textLimit?: string | number;
+};
+type LogType = "info" | "warn" | "error" | "debug";
+type LogLevel = LogType | "silent";
+interface ServerBuildOption {
+  /**
+   * Service startup port
+   *
+   * 服务启动端口
+   * @default 8080
+   */
+  serverPort?: number;
+  /**
+   * Service application output directory
+   *
+   * 服务应用输出目录
+   * @default 'dist/mockServer'
+   */
+  dist?: string;
+  /**
+   * Service application log level
+   *
+   * 服务应用日志级别
+   * @default 'error'
+   */
+  log?: LogLevel;
+  /**
+   * Whether to include record files in the build output
+   *
+   * 是否在构建输出中包含录制文件
+   *
+   * @default true
+   */
+  includeRecord?: boolean;
+}
+interface MockMatchPriority {
+  /**
+   * The priority of matching rules is global.
+   * The rules declared in this option will take priority over the default rules.
+   * The higher the position of the rule in the array, the higher the priority.
+   *
+   * Do not declare general rules in this option, such as /api/(.*),
+   * as it will prevent subsequent rules from taking effect.
+   * Unless you are clear about the priority of the rules,
+   * most of the time you do not need to configure this option.
+   *
+   * 匹配规则优先级, 全局生效。
+   * 声明在该选项中的规则将优先于默认规则生效。
+   * 规则在数组越靠前的位置，优先级越高。
+   *
+   * 不要在此选项中声明通用性的规则，比如 `/api/(.*)`，这将导致后续的规则无法生效。
+   * 除非你明确知道规则的优先级，否则大多数情况下都不需要配置该选项。
+   * @default []
+   */
+  global?: string[];
+  /**
+   * For some special cases where the priority of certain rules needs to be adjusted,
+   * this option can be used. For example, when a request matches both Rule A and Rule B,
+   * and Rule A has a higher priority than Rule B, but it is desired for Rule B to take effect.
+   *
+   * 对于一些特殊情况，需要调整部分规则的优先级，可以使用此选项。
+   * 比如一个请求同时命中了规则 A 和 B，且 A 比 B 优先级高， 但期望规则 B 生效时。
+   *
+   * @example
+   * ```ts
+   * {
+   *   special: {
+   *     // /api/a/:b/c 优先级将提升到 /api/a/b/:c 前面
+   *     // The /api/a/:b/c priority is promoted to /api/a/b/:c
+   *     '/api/a/:b/c': ['/api/a/b/:c'],
+   *     // 仅在请求满足 /api/a/b/c 时生效
+   *     // Only when the request satisfies /api/a/b/c
+   *     '/api/:a/b/c': {
+   *        rules: ['/api/a/:b/c'],
+   *        when: ['/api/a/b/c']
+   *      }
+   *   }
+   * }
+   * ```
+   */
+  special?: MockMatchSpecialPriority;
+}
+interface MockMatchSpecialPriority {
+  /**
+   * When both A and B or C match, and B or C is at the top of the sort order,
+   * insert A into the top position.The `when` option is used to further constrain
+   * the priority adjustment to be effective only for certain requests.
+   *
+   * 当 A 与 B或 C 同时满足匹配，`B` 或 `C` 在排序首位时，将A插入到首位。
+   * when 选项用于进一步约束该优先级调整仅针对哪些请求有效。
+   *
+   * @example
+   * ```ts
+   * {
+   *   A: ['B', 'C'],
+   *   A: { rules: ['B', 'C'], when: ['/api/a/b/c'] }
+   * }
+   * ```
+   */
+  [key: string]: string[] | {
+    rules: string[];
+    when: string[];
+  };
+}
+/**
+ * Configure plugin
+ *
+ * 插件配置项
+ */
+interface MockServerPluginOptions {
+  /**
+   * To configure the path matching rules for http mock services,
+   * any request path starting with prefix will be intercepted and proxied.
+   * If the prefix starts with `^`, it will be recognized as a `RegExp`.
+   *
+   * 为 http mock 服务配置 路径匹配规则，任何请求路径以 prefix 开头的都将被拦截代理。
+   * 如果 prefix 以 `^` 开头，将被识别为 `RegExp`。
+   * @default []
+   * @example ['^/api']
+   */
+  prefix?: string | string[];
+  /**
+   * Configure path matching rules for WebSocket mock service.
+   * Any ws/wss requests with a request path starting with wsPrefix
+   * will be intercepted by the proxy.
+   * If wsPrefix starts with `^`, it will be recognized as a `RegExp`.
+   *
+   * 为 websocket mock 服务配置 路径匹配规则， 任何请求路径以 wsPrefix 开头的 ws/wss请求，
+   * 都将被代理拦截。
+   * 如果 wsPrefix 以 `^` 开头，将被识别为 `RegExp`。
+   * @default []
+   * @example ['/socket.io']
+   */
+  wsPrefix?: string | string[];
+  /**
+   * Whether to enable mock server
+   *
+   * 是否开启 mock 服务
+   * @default true
+   */
+  enabled?: boolean;
+  /**
+   * Configure the matching context for `include` and `exclude`.
+   *
+   * 配置 `include` 和 `exclude` 的匹配上下文
+   *
+   * @default process.cwd()
+   */
+  cwd?: string;
+  /**
+   * The directory to store mock files
+   *
+   * 存储 mock 文件的目录
+   *
+   * @default 'mock'
+   */
+  dir?: string;
+  /**
+   * glob string matching mock includes files
+   *
+   * glob 字符串匹配 mock 包含的文件
+   * @see [picomatch](https://github.com/micromatch/picomatch#globbing-features)
+   * @default []
+   */
+  include?: string | string[];
+  /**
+   * glob string matching mock excluded files
+   *
+   * glob 字符串匹配 mock 排除的文件
+   * @see [picomatch](https://github.com/micromatch/picomatch#globbing-features)
+   */
+  exclude?: string | string[];
+  /**
+   * Enable log and configure log level
+   *
+   * 开启日志，或配置 日志级别
+   * @default 'info'
+   */
+  log?: boolean | LogLevel;
+  /**
+   * When the mock resource is hot updated, only the data content is updated,
+   * but the page is not refreshed by default.
+   * If you want to refresh the page every time you modify a mock file,
+   * you can open this option.
+   *
+   * mock资源热更新时，仅更新了数据内容，但是默认不重新刷新页面。
+   * 当你希望每次修改mock文件都刷新页面时，可以打开此选项。
+   * @default false
+   */
+  reload?: boolean;
+  /**
+   * Configure to `cors`
+   *
+   * 配置 `cors`
+   * @default true
+   * @see [cors](https://github.com/expressjs/cors#configuration-options)
+   */
+  cors?: boolean | CorsOptions;
+  /**
+   * formidable options
+   * @see [formidable](https://github.com/node-formidable/formidable#options)
+   */
+  formidableOptions?: formidable.Options;
+  /**
+   * cookies options
+   * @see [cookies](https://github.com/pillarjs/cookies#new-cookiesrequest-response--options)
+   */
+  cookiesOptions?: CookiesOption;
+  /**
+   * Configure to `co-body`
+   *
+   * 配置 `co-body`
+   *
+   * @see [co-body](https://github.com/cojs/co-body#options)
+   */
+  bodyParserOptions?: BodyParserOptions;
+  /**
+   * When you need to build a small mock service, you can configure this option.
+   *
+   * 当需要构建一个小型mock服务时，可配置此项
+   * @default false
+   */
+  build?: boolean | ServerBuildOption;
+  /**
+   * Priority sorting for path matching rules is valid only for rules containing dynamic parameters.
+   * In most cases, the default sorting rules can meet the needs.
+   * However, in some cases where custom sorting rules are required, this option can be used.
+   *
+   * 路径匹配规则优先级排序，仅对包含动态参数的规则有效。
+   * 大部分情况下默认的排序规则都可以满足需求。
+   * 但有些情况下，需要自定义排序规则时，可以使用此选项。
+   *
+   * @example
+   * ```ts
+   * export default {
+   *   priority: {
+   *     global: ['/api/:a/b/c', '/api/a/:b/c', '/api/a/b/:c'],
+   *     special: {
+   *       '/api/:a/:b/c': {
+   *         rules: ['/api/a/:b/:c', '/api/a/b/:c'],
+   *         when: ['/api/a/b/c']
+   *        }
+   *     }
+   *   }
+   * }
+   * ```
+   */
+  priority?: MockMatchPriority;
+  /**
+   * Active scenario(s) for filtering mocks.
+   * Only mocks whose `scene` intersects with this value (or have no `scene` configured)
+   * will be considered for matching.
+   * Can be overridden per-request via the `X-Mock-Scene` header.
+   *
+   * 当前激活的场景，用于过滤 mock。
+   * 只有 `scene` 与此有交集的 mock（或未配置 `scene` 的 mock）才会被考虑匹配。
+   * 可通过 `X-Mock-Scene` 请求头按请求覆盖。
+   */
+  activeScene?: string | string[];
+  /**
+   * Record and replay configuration
+   * Can be abbreviated as: record: true
+   *
+   * 录制回放配置
+   * 可简写为：record: true
+   *
+   * @default false
+   *
+   * @example
+   * ```ts
+   * // Enable with default settings
+   * record: true
+   *
+   * // Or with custom configuration
+   * record: {
+   *   enabled: true,
+   *   dir: 'mock/.recordings',
+   *   overwrite: true,
+   * }
+   * ```
+   */
+  record?: boolean | RecordOptions;
+  /**
+   * Replay recorded requests, default enabled when record enabled
+   *
+   * 回放已记录的请求，默认请求录制启用时自动启用回放功能
+   */
+  replay?: boolean;
+}
+//#endregion
+//#region src/types/basicConfig.d.ts
+type ResponseBodyFn = (request: MockRequest) => ResponseBody | Promise<ResponseBody>;
+type ResponseHeaderFn = (request: MockRequest) => Headers | Promise<Headers>;
+type CookieValue = string | [string, SetCookieOption];
+type ResponseCookies = Record<string, CookieValue>;
+type ResponseCookiesFn = (request: MockRequest) => ResponseCookies | Promise<ResponseCookies>;
+interface MockBaseItem {
+  /**
+   * The interface address that needs to be mocked,
+   * supported by `path-to-regexp@8.3.0` for path matching.
+   *
+   * 需要进行 mock 的接口地址, 由 `path-to-regexp@8.3.0` 提供路径匹配支持
+   * @see [path-to-regexp](https://github.com/pillarjs/path-to-regexp)
+   * @example
+   * ```txt
+   * /api/login
+   * /api/post/:id
+   * /api/users{/:id}
+   * /api/files/*path
+   * ```
+   */
+  url: string;
+  /**
+   * Enable WebSocket interface simulation
+   *
+   * 开启 websocket 接口模拟
+   *
+   * @default false
+   */
+  ws?: boolean;
+  /**
+   * Whether to enable mock for this interface.
+   * In most scenerios, we only need to mock some interfaces instead of all requests that
+   * have been configured with mock.
+   * Therefore, it is important to be able to configure whether to enable it or not.
+   *
+   * 是否启动对该接口的mock，在多数场景下，我们仅需要对部分接口进行 mock，
+   * 而不是对所有配置了mock的请求进行全量mock，所以是否能够配置是否启用很重要
+   * @default true
+   */
+  enabled?: boolean;
+  /**
+   * Enable log and configure log level
+   *
+   * 开启日志，或配置 日志级别
+   * @default 'info'
+   */
+  log?: boolean | LogLevel;
+  /**
+   * Scenario identifier for this mock.
+   * When not configured, the mock is universal and always matches regardless of active scenario.
+   * When configured, the mock only matches when at least one of its scenarios matches
+   * one of the active scenarios.
+   *
+   * 该 mock 的场景标识。
+   * 未配置时，该 mock 为全场景通用，不受 activeScene 限制。
+   * 配置后，只有 scene 中任意一项与 activeScene 中任意一项匹配时，该 mock 才会激活。
+   */
+  scene?: string | string[];
+}
+//#endregion
+//#region src/types/httpConfig.d.ts
+interface MockErrorConfig {
+  /**
+   * Error probability (0-1), default is 0.5
+   *
+   * 错误概率（0-1），默认 0.5
+   * @default 0.5
+   */
+  probability?: number;
+  /**
+   * Error status code, default is 500
+   *
+   * 错误状态码，默认 500
+   * @default 500
+   */
+  status?: number;
+  /**
+   * Error status text
+   *
+   * 错误状态文本
+   */
+  statusText?: string;
+  /**
+   * Custom error response body, suitable for when the status is 200, but the response body needs to simulate an error scenario
+   *
+   * 自定义错误响应体，适用于 status 为 200，但响应体需要模拟错误场景
+   * @example
+   * { code: 500, msg: 'Internal Server Error', result: null }
+   */
+  body?: ResponseBody | ResponseBodyFn;
+}
+interface MockHttpItem extends MockBaseItem {
+  /**
+   * The interface allows request methods, and by default allows both GET and POST.
+   *
+   * 该接口允许的 请求方法，默认同时支持 GET 和 POST
+   * @default ['POST','GET']
+   */
+  method?: Method | Method[];
+  /**
+   * Configure the response body headers
+   *
+   * 配置响应体 headers
+   * @default
+   * ```json
+   * { "Content-Type": "application/json" }
+   * ```
+   */
+  headers?: Headers | ResponseHeaderFn;
+  /**
+   * Configure Response Header Status Code
+   *
+   * 配置 响应头状态码
+   * @default 200
+   */
+  status?: number;
+  /**
+   * Configure response header status text
+   *
+   * 配置响应头状态文本
+   * @default 'OK'
+   */
+  statusText?: string;
+  /**
+   * Configure response delay time,
+   * If an array is passed in, it represents the range of delay time.
+   * unit: `ms`
+   *
+   * 配置响应延迟时间, 如果传入的是一个数组，则代表延迟时间的范围
+   * 单位： `ms`
+   * @default 0
+   */
+  delay?: number | [number, number];
+  /**
+   * Configure response body cookies
+   *
+   * 设置响应体 cookies
+   * @example
+   * ```ts
+   * export default {
+   *   cookies: {
+   *     'token1': '1234567',
+   *     'token2': ['1234567', { path: '/' }],
+   *   },
+   * }
+   * ```
+   * @example
+   * ```ts
+   * export default {
+   *   cookies: function (request) {
+   *     return {
+   *       'token1': '1234567',
+   *       'token2': ['1234567', { path: '/' }],
+   *     }
+   *   },
+   * }
+   * ```
+   */
+  cookies?: ResponseCookies | ResponseCookiesFn;
+  /**
+   * Response body data type, optional values include `text, json, buffer`.
+   *
+   * And also support types included in `mime-db`.
+   * When the response body returns a file and you are not sure which type to use,
+   * you can pass the file name as the value. The plugin will internally search for matching
+   * `content-type` based on the file name suffix.
+   *
+   * However, if it is a TypeScript file such as `a.ts`, it may not be correctly matched
+   * as a JavaScript script. You need to modify `a.ts` to `a.js` as the value passed
+   * in order to recognize it correctly.
+   *
+   * 响应体数据类型, 可选值包括 `text, json, buffer`，
+   *
+   * 还支持`mime-db`中的包含的类型。
+   * 当响应体返回的是一个文件，而你不确定应该使用哪个类型时，可以将文件名作为值传入，
+   * 插件内部会根据文件名后缀查找匹配的`content-type`。
+   *
+   * 但如果是 `typescript`文件如 `a.ts`，可能不会被正确匹配为 `javascript`脚本，
+   * 你需要将 `a.ts` 修改为 `a.js`作为值传入才能正确识别。
+   * @see [mime-db](https://github.com/jshttp/mime-db)
+   * @default 'json'
+   * @example
+   * ```txt
+   * json
+   * buffer
+   * my-app.dmg
+   * music.mp4
+   * ```
+   */
+  type?: "text" | "json" | "buffer" | string;
+  /**
+   * Configure response body data content
+   *
+   * 配置响应体数据内容
+   * @default ''
+   * @example
+   * ```ts
+   * export default {
+   *   body: { a: 1 },
+   * }
+   * ```
+   * @example
+   * ```ts
+   * export default {
+   *   body: function(request) {
+   *     return { a: 1, query: request.query }
+   *   },
+   * }
+   * ```
+   */
+  body?: ResponseBody | ResponseBodyFn;
+  /**
+   * If you need to set complex response content, you can use the response method,
+   * which is a middleware. Here, you can get information such as req
+   * and res of the http request,
+   * and then return response data through res.write() | res.end().
+   * Otherwise, you need to execute next() method.
+   * In `req`, you can also get parsed request information such as
+   * `query`, `params`, `body` and `refererQuery`.
+   *
+   * 如果需要设置复杂的响应内容，可以使用 response 方法，
+   * 该方法是一个 middleware，你可以在这里拿到 http 请求的 req、res等信息，
+   * 然后通过 res.write() | res.end() 返回响应数据， 否则需要执行 next() 方法。
+   * 在 `req` 中，还可以拿到 query、params、body, refererQuery 等已解析的请求信息。
+   *
+   * @see [connect](https://github.com/senchalabs/connect#appusefn)
+   * @example
+   * ```ts
+   * export default {
+   *   response(req, res) {
+   *     res.setHeader('Content-Type', 'application/json')
+   *     res.end(JSON.stringify({ a: 1 }))
+   *   },
+   * }
+   * ```
+   *
+   */
+  response?: (req: MockRequest, res: MockResponse, next: Connect.NextFunction) => void | Promise<void>;
+  /**
+   * Request Validator
+   *
+   * Sometimes, for the same API request, data needs to be returned based
+   * on different request parameters.
+   * However, if all of this is written in a single mock's body or response,
+   * the content can become cumbersome and difficult to manage.
+   * The function of a validator allows you to configure multiple mocks with
+   * the same URL simultaneously and determine which mock should be used through validation.
+   *
+   * 请求验证器
+   *
+   * 有时候，一个相同的API请求，需要根据不同的请求参数，来决定返回数据，
+   * 但全部都在单个 mock中的 body或者 response 中写，内容会很庞杂，不好管理，
+   * 验证器的功能，允许你同时配置多条相同url的mock，通过验证器来判断使哪个mock生效。
+   * @example
+   * ```ts
+   * export default {
+   *   validator: {
+   *     query: { id: 123 }
+   *   }
+   * }
+   * ```
+   * @example
+   * ```ts
+   * export default {
+   *   validator: function(request) {
+   *     return request.query.id === 123
+   *   }
+   * }
+   * ```
+   */
+  validator?: Partial<Omit<ExtraRequest, "getCookie">> | ((request: ExtraRequest) => boolean);
+  /**
+   * Configure error simulation
+   *
+   * 配置错误模拟
+   * @example
+   * ```ts
+   * export default {
+   *   error: {
+   *     probability: 0.5,
+   *     status: 500,
+   *     message: 'Internal Server Error'
+   *   }
+   * }
+   * ```
+   */
+  error?: MockErrorConfig;
+  ws?: false;
+}
+//#endregion
+//#region src/types/wsConfig.d.ts
+interface MockWebsocketItem extends MockBaseItem {
+  ws: true;
+  /**
+   * Configure Websocket Server
+   *
+   * 配置 Websocket Server
+   * @example
+   * ```ts
+   * export default {
+   *   ws: true
+   *   setup: (wss, { onCleanup }) => {
+   *     wss.on('connection', (ws,req) => {
+   *       ws.on('message', (raw) => console.log(raw))
+   *       const timer = setInterval(
+   *         () => ws.send(JSON.stringify({ type: 'connected' })),
+   *         1000,
+   *       )
+   *       onCleanup(() => clearInterval(timer))
+   *     })
+   *     wss.on('error', (error) => console.error(error))
+   *   }
+   * }
+   * ```
+   */
+  setup: (wss: WebSocketServer, context: WebSocketSetupContext) => void;
+}
+interface WebSocketSetupContext {
+  /**
+   * When defining WSS, you may perform some automatic or looping tasks.
+   * However, when hot updating, the plugin will re-execute `setup()`,
+   * which may result in duplicate registration of listening events and looping tasks
+   * such as setTimeout. You can use `onCleanup()` to clear these automatic or looping tasks.
+   *
+   * 当你在定义 WSS 时，可能会执行一些自动任务或循环任务，
+   * 但是当热更新时，插件内部会重新执行 setup() ，
+   * 这可能导致出现 重复注册监听事件 和 循环任务如 `setTimeout` 等。
+   * 通过 `onCleanup()` 可以来清除这些自动任务或循环任务。
+   * @example
+   * ``` ts
+   * onCleanup(() => clearTimeout(timeId))
+   * ```
+   */
+  onCleanup: (cleanup: () => void) => void;
+}
+//#endregion
+//#region src/types/config.d.ts
+type MockOptions = (MockHttpItem | MockWebsocketItem)[];
+//#endregion
+//#region src/types/index.d.ts
+type FormidableFile = formidable.File | formidable.File[];
+//#endregion
+export { MockRequest as C, GetCookieOption as D, CookiesOption as E, SetCookieOption as O, Method as S, ResponseBody as T, RecordedRequest as _, MockErrorConfig as a, ExtraRequest as b, LogLevel as c, MockMatchSpecialPriority as d, MockServerPluginOptions as f, RecordedReq as g, RecordedMeta as h, WebSocketSetupContext as i, LogType as l, RecordOptions as m, MockOptions as n, MockHttpItem as o, ServerBuildOption as p, MockWebsocketItem as r, BodyParserOptions as s, FormidableFile as t, MockMatchPriority as u, RecordedRes as v, MockResponse as w, Headers as x, ResolvedRecordOptions as y };
