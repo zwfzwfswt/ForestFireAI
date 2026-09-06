@@ -207,6 +207,21 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
   };
   globalThis.__dashboardLeafletTest = {
     map: () => map,
+    layerGroup: () => ({
+      addTo() {
+        return this;
+      },
+      addLayer() {
+        return this;
+      },
+      removeLayer() {
+        layerRemoved++;
+        return this;
+      },
+      clearLayers() {
+        return this;
+      },
+    }),
     control: { zoom: () => ({ addTo() {} }), scale: () => ({ addTo() {} }) },
     tileLayer(url) {
       tiles.push(url);

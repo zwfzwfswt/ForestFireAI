@@ -3,6 +3,9 @@ import type { Ref } from "vue";
 import type { Map, LeafletMouseEvent, TileLayer } from "leaflet";
 import { mapConfig, baseLayers } from "./mapConfig";
 import { createMapSession } from "./mapSession";
+import { createMapLayerRegistry } from "./layers/mapLayerRegistry";
+import type { MapLayerRegistry } from "./layers/mapLayerRegistry";
+import { useMapDrawing } from "./composables/useMapDrawing";
 
 export function useForestMap(container: Ref<HTMLElement | null>) {
   const coordinate = ref<{ lat: number; lng: number } | null>(null);
@@ -11,6 +14,8 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
   const visible = ref(true);
   const error = ref("");
   const ready = ref(false);
+  const drawing = useMapDrawing();
+  let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
   let layer: TileLayer | undefined;
@@ -23,6 +28,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    drawing.detach();
     observer?.disconnect();
     observer = undefined;
     cancelAnimationFrame(frame);
@@ -31,11 +37,13 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
       center = [position.lat, position.lng];
       zoom.value = map.getZoom();
       layer?.off();
+      layers?.dispose();
       map.remove();
       map.off();
     }
     map = undefined;
     layer = undefined;
+    layers = undefined;
     updateLayer = () => {};
     ready.value = false;
     coordinate.value = null;
@@ -53,6 +61,9 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
           maxZoom: mapConfig.maxZoom,
           zoomControl: false,
         });
+        layers = createMapLayerRegistry(map, () => L.layerGroup());
+        const baseMap = layers.register("BaseMapLayer");
+        drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
         L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
         map.on("mousemove", (event: LeafletMouseEvent) => {
@@ -69,7 +80,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
           if (!map) return;
           if (layer) {
             layer.off();
-            map.removeLayer(layer);
+            baseMap.removeLayer(layer);
             layer = undefined;
           }
           error.value = "";
@@ -82,7 +93,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
           layer.on("tileerror", () => {
             error.value = "部分底图瓦片加载失败，请检查网络、切换底图或重试。";
           });
-          layer.addTo(map);
+          layer.addTo(baseMap);
         };
         updateLayer();
         observer = new ResizeObserver(resize);
@@ -108,10 +119,14 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
     if (ready.value) updateLayer();
     else void start();
   }
+  function resetView() {
+    drawing.cancel();
+    map?.setView(mapConfig.center, mapConfig.zoom);
+  }
   watch([selected, visible], () => updateLayer());
   onMounted(start);
   onActivated(start);
   onDeactivated(() => session.stop());
   onBeforeUnmount(() => session.stop());
-  return { coordinate, zoom, selected, visible, error, ready, retry };
+  return { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView };
 }

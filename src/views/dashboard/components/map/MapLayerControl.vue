@@ -12,7 +12,7 @@
       <input v-model="visible" type="checkbox" />
       显示底图
     </label>
-    <small>叠加图层：暂无</small>
+    <small>临时绘制：在 GIS 工具栏管理</small>
   </div>
 </template>
 <script setup lang="ts">

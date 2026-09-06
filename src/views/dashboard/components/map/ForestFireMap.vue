@@ -6,6 +6,20 @@
     </header>
     <div class="forest-map__toolbar">
       <MapLayerControl v-model:selected="selected" v-model:visible="visible" />
+      <MapToolbar
+        :ready="ready"
+        :mode="mode"
+        :status="status"
+        :count="count"
+        :visible="drawingVisible"
+        :can-finish="canFinish"
+        @select="drawing.select"
+        @finish="drawing.finish"
+        @cancel="drawing.cancel"
+        @clear="drawing.clear"
+        @toggle="drawingVisible ? drawing.hide() : drawing.show()"
+        @reset="resetView"
+      />
     </div>
     <div class="forest-map__body">
       <div
@@ -21,7 +35,10 @@
       <p v-else-if="!visible" class="forest-map__message">底图已隐藏，可在图层控制中重新显示。</p>
     </div>
     <MapCoordinateDisplay :coordinate="coordinate" :zoom="zoom" />
-    <small class="forest-map__note">在线底图 · 非实时影像；业务统计与告警仍为 Mock。</small>
+    <small class="forest-map__note">
+      在线底图 · 非实时影像；业务统计与告警仍为
+      Mock。绘制仅本页临时保存，离开后清空；测量为球面近似。
+    </small>
   </section>
 </template>
 <script setup lang="ts">
@@ -30,10 +47,13 @@ import "leaflet/dist/leaflet.css";
 import MapCoordinateDisplay from "./MapCoordinateDisplay.vue";
 import MapFullscreenControl from "./MapFullscreenControl.vue";
 import MapLayerControl from "./MapLayerControl.vue";
+import MapToolbar from "./MapToolbar.vue";
 import { useForestMap } from "./useForestMap";
 const shell = ref<HTMLElement | null>(null);
 const container = ref<HTMLElement | null>(null);
-const { coordinate, zoom, selected, visible, error, ready, retry } = useForestMap(container);
+const { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView } =
+  useForestMap(container);
+const { mode, status, count, visible: drawingVisible, canFinish } = drawing;
 </script>
 <style scoped lang="scss">
 .forest-map {
@@ -74,6 +94,11 @@ const { coordinate, zoom, selected, visible, error, ready, retry } = useForestMa
   &__canvas {
     position: absolute;
     inset: 0;
+  }
+  :deep(.gis-result) {
+    color: var(--el-text-color-primary);
+    background: var(--el-bg-color-overlay);
+    border-color: var(--el-border-color);
   }
   &__message {
     position: absolute;
