@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from app.core.config import Settings
 from app.simulator.motion import clamp, move
 from app.telemetry.models import TelemetryMessage
-from app.websocket.manager import ConnectionManager
+from app.telemetry.bus import TelemetryHandler
 
 # Deliberate ID contract with frontend Mock assets; no asset CRUD backend in V1.
 MOCK_SEEDS = (
@@ -17,14 +17,17 @@ MOCK_SEEDS = (
 
 
 class UavSimulator:
-    def __init__(self, config: Settings):
+    def __init__(self, config: Settings, count: int = 5):
+        if not 1 <= count <= 5:
+            raise ValueError("Simulator count must be 1..5")
+        self.count = count
         self.config = config
         self.latest: dict[str, TelemetryMessage] = {}
 
     def tick(self, timestamp: datetime) -> list[TelemetryMessage]:
         if not self.latest:
             bounds = self.config.simulation_bounds
-            for number, lng, lat, altitude, speed, heading, battery, signal in MOCK_SEEDS:
+            for number, lng, lat, altitude, speed, heading, battery, signal in MOCK_SEEDS[:self.count]:
                 packet = TelemetryMessage(
                     uavId=f"mock-uav-{number}", timestamp=timestamp,
                     longitude=clamp(lng, bounds.west, bounds.east),
@@ -36,12 +39,12 @@ class UavSimulator:
             self.latest = {key: move(packet, timestamp, self.config) for key, packet in self.latest.items()}
         return list(self.latest.values())
 
-    async def run(self, manager: ConnectionManager):
+    async def run(self, publish: TelemetryHandler):
         loop = asyncio.get_running_loop()
         deadline = loop.time()
         while True:
             for packet in self.tick(datetime.now(timezone.utc)):
-                await manager.broadcast(packet.model_dump(mode="json"))
+                await publish(packet)
             deadline += self.config.telemetry_interval
             # Do not accumulate catch-up tasks after a stalled event loop.
             if deadline < loop.time():

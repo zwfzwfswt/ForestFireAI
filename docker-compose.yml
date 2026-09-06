@@ -1,0 +1,9 @@
+# DEV ONLY. Bind to loopback; this is not a production broker configuration.
+services:
+  mqtt:
+    image: eclipse-mosquitto:2.0.22
+    ports:
+      - "127.0.0.1:1883:1883"
+    volumes:
+      - ./deploy/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: "no"

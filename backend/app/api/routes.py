@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
 
@@ -7,6 +7,17 @@ router = APIRouter()
 async def health():
     # Explicit V1 health contract, not the existing admin API response envelope.
     return {"status": "ok", "service": "ForestFireAI Backend"}
+
+
+@router.get("/api/v1/system/status")
+async def system_status(request: Request):
+    state = request.app.state
+    return {
+        "backend": "ok",
+        "mqtt": state.mqtt.status if state.mqtt is not None else "disabled",
+        "telemetryInputMode": state.config.telemetry_input_mode,
+        "connectedWebSocketClients": len(state.connections.clients),
+    }
 
 
 @router.websocket("/ws/telemetry")

@@ -1,10 +1,47 @@
-# ForestFireAI 实时遥测后端链路 V1
+﻿# ForestFireAI MQTT 遥测接入 V1
 
-本阶段仅提供 Python 模拟遥测、Health API 和 WebSocket 推送。不提供资产 CRUD、认证、真实设备控制或持久化；既有管理后台 API、登录和 SSE 保持原地址。
+仅 DEV / MOCK：Python Simulator 与 MQTT Consumer 共用 TelemetryBus，再由 WebSocket 推送前端。没有真实设备、控制命令、认证、数据库或持久化。既有管理后台 API、登录与 SSE 地址保持不变。
 
-## 启动
+## 架构
 
-使用 Python 3.11–3.13（本次验证为 3.13.11）。首次建立独立环境，以下为 PowerShell：
+```mermaid
+flowchart LR
+  S[同一个 Python Simulator] -->|direct| B[TelemetryBus]
+  S -->|mqtt| M[Mosquitto Broker]
+  P[DEV MQTT Publisher] --> M
+  M --> C[MQTT Consumer / Pydantic]
+  C --> B
+  B --> W[WebSocket Manager]
+  W --> T[Frontend Telemetry Store]
+  T --> U[Leaflet / UAV UI]
+```
+
+```text
+backend/app/
+  main.py                 lifespan：按模式装配与释放资源
+  core/config.py          集中配置、环境变量校验
+  telemetry/models.py     TelemetryMessage，唯一遥测 schema
+  telemetry/bus.py        publish / subscribe / unsubscribe
+  mqtt/consumer.py        接收、发布、校验、重连、有限队列
+  simulator/fleet.py      五架 Mock UAV，周期任务接受 publish 回调
+  simulator/motion.py     连续运动，两个模式共用
+  websocket/manager.py    总线订阅者，多客户端与发送超时隔离
+  api/routes.py           Health、System Status、WebSocket
+backend/tools/mqtt_uav_publisher.py   DEV TOOL，复用 fleet/schema
+backend/tests/                      单元和真实 Broker 集成测试
+ deploy/mqtt/mosquitto.conf          仅开发环境 Broker 配置
+ docker-compose.yml                 仅开发环境 Compose
+```
+
+TelemetryBus 只接受 TelemetryMessage，订阅去重、取消订阅幂等，publish 等待订阅者完成并隔离普通异常；不保留历史、不启动无上限后台任务。WebSocket Manager 订阅总线，不区分消息来源，仍并发发送并单独移除失败/超时客户端。
+
+新增运行依赖 `paho-mqtt==2.1.0`，使用其[网络线程和自动重连接口](https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html)。MQTT 网络线程校验后写入最多 256 帧的线程安全队列，异步任务再发布到 Bus；队列满丢弃最旧帧。重连从 1 秒指数退避，最多 30 秒；重连重新订阅，收到成功 SUBACK 才显示 connected。服务启动不等待 Broker 可用。
+
+MQTT 模式的 Simulator 用同一连接发布，必须经 Broker 回流才能进入 Bus，不直接双发。QoS 0、不 retain；断线丢弃模拟帧，不补发历史。关闭时停止 Simulator，断开 MQTT 并等待线程退出，取消消费任务、清空队列、取消总线订阅、释放 WebSocket。
+
+## 安装
+
+Python 3.11–3.13。PowerShell，在仓库根目录：
 
 ```powershell
 cd backend
@@ -13,18 +50,65 @@ python -m venv .venv
 python -m pip install -r requirements-dev.txt
 ```
 
-仅运行服务可安装 `requirements.txt`。运行依赖为 FastAPI、Pydantic、Uvicorn、websockets；开发测试另用 pytest、httpx。版本固定为本次验证版本，没有引入数据库或消息中间件。Linux/macOS 使用 `source .venv/bin/activate` 激活。
+仅运行可安装 requirements.txt；Linux/macOS 使用 `source .venv/bin/activate`。前端无新增依赖。本次使用 Python 3.13.11 与工作区虚拟环境中的 Paho，没有升级全局包。
 
-已激活环境后，在仓库根目录打开后端终端：
+## Direct 模式（默认，无需 Broker）
+
+backend 目录、激活环境后：
 
 ```powershell
-cd backend
+$env:TELEMETRY_INPUT_MODE = 'direct'
 uvicorn app.main:app --reload
 ```
 
-Uvicorn 默认绑定本机 `127.0.0.1:8000`。本阶段使用一个 worker；每个进程有独立模拟状态，不支持多 worker 共享舰队。停止或 reload 会销毁旧任务和连接，新进程从 Mock 初始位置开始。
+Simulator → Bus → WebSocket，MQTT 状态为 disabled，不建立 MQTT 连接。
 
-另开前端终端，在仓库根目录配置 `.env.development.local`：
+## MQTT 模式与 Mosquitto
+
+先准备 Docker / Docker Compose。在仓库根目录：
+
+```powershell
+docker compose up -d mqtt
+docker compose logs -f mqtt
+```
+
+Compose 使用 eclipse-mosquitto:2.0.22，主机仅绑定 `127.0.0.1:1883`，只读挂载 [Mosquitto 配置](../deploy/mqtt/mosquitto.conf)。允许匿名、无 TLS、无持久化，**仅限开发环境，禁止作为生产配置使用**。停止用 `docker compose down`。本阶段不提供生产安全配置。
+
+另开后端终端，进入 backend 并激活环境：
+
+```powershell
+$env:TELEMETRY_INPUT_MODE = 'mqtt'
+$env:MQTT_HOST = '127.0.0.1'
+$env:MQTT_PORT = '1883'
+$env:MQTT_TOPIC_PREFIX = 'forestfire/uav'
+uvicorn app.main:app --reload
+```
+
+五架内置 UAV 默认每秒经 Broker 发布。Broker 中断不停止 FastAPI 或 WebSocket；恢复后自动重连、重新订阅并继续遥测。
+
+## 独立 DEV Publisher
+
+避免两套模拟器同时发布相同 ID：在后端终端禁用内置 Simulator 再启动：
+
+```powershell
+$env:TELEMETRY_INPUT_MODE = 'mqtt'
+$env:FORESTFIRE_SIMULATOR_ENABLED = 'false'
+uvicorn app.main:app --reload
+```
+
+另一个激活环境的 backend 终端：
+
+```powershell
+$env:MQTT_HOST = '127.0.0.1'
+$env:MQTT_PORT = '1883'
+python tools/mqtt_uav_publisher.py --count 5
+```
+
+count 支持 1～5，默认五架、1 Hz；`--interval 0.5` 设置秒间隔。Ctrl+C 释放连接。工具复用现有 UavSimulator、运动模型与 TelemetryMessage。恢复内置模拟时设置 `FORESTFIRE_SIMULATOR_ENABLED=true` 并重启后端。
+
+## 前端
+
+仓库根目录 `.env.development.local`：
 
 ```dotenv
 VITE_TELEMETRY_SOURCE=websocket
@@ -35,50 +119,16 @@ VITE_TELEMETRY_WS_URL=ws://127.0.0.1:8000/ws/telemetry
 pnpm dev
 ```
 
-进入 Dashboard 或无人机管理页面，展开 `DEV / MOCK SIMULATOR`。WebSocket 模式自动连接；显示 `BACKEND WEBSOCKET` 及连接状态，可手动断开、重新连接或断开并清除遥测。连接状态与单架 UAV 的在线状态分别显示。
+Dashboard / UAV 页面现有 DEV / MOCK SIMULATOR 显示 BACKEND WEBSOCKET 与连接状态。后端 direct/mqtt 切换无需修改前端配置；浏览器不连接 MQTT。本次未新增前端状态面板，后端/MQTT/输入模式/客户端数通过 System Status 查询。
 
-切回本地模式，在 `.env.development.local` 设置并重启 Vite：
+切回本地用 `VITE_TELEMETRY_SOURCE=local` 并重启 Vite，或在现有面板选择 LOCAL SIMULATOR。切换清理旧遥测与轨迹，保留资产、Drawing 和业务图层。不要将 VITE_APP_API_URL 改为本后端；本服务没有原管理后台接口。HTTPS 页面使用 wss 地址。
 
-```dotenv
-VITE_TELEMETRY_SOURCE=local
-```
+## Topic、协议与状态
 
-本地默认不自动模拟，点击“启动全部模拟器”。也可直接在面板切换来源；运行时选择只保留在当前前端会话，刷新后按环境配置恢复。切换会停止旧来源、清除旧遥测和轨迹，然后启用新来源；资产、Drawing 和其他业务图层不清除。HTTPS 页面应配置 `wss://` 地址。
-
-不要把 `VITE_APP_API_URL` 改为本后端：V1 没有实现原有管理后台登录/菜单/系统接口。新的 WS 地址单独配置，不使用 Axios，也不携带现有认证 Token。
-
-## 工程结构
-
-```text
-backend/
-  app/
-    main.py                 应用工厂、lifespan、模拟任务释放
-    api/routes.py           GET /api/v1/health、/ws/telemetry
-    core/config.py          Pydantic 配置与环境变量
-    telemetry/models.py     严格校验的遥测消息
-    simulator/motion.py     连续运动模型
-    simulator/fleet.py      五架 Mock UAV、单一周期任务
-    websocket/manager.py    connect / disconnect / broadcast
-  tests/test_backend.py
-  requirements.txt
-  requirements-dev.txt
-```
-
-应用通过 lifespan 创建一份五机模拟器和连接管理器。每个周期推进状态，广播同一份帧给所有客户端，不为每个连接启动模拟器。并发发送设定超时，坏连接和慢连接单独移除；接收端监听断开事件，关闭失败仍从集合释放。关闭应用时取消并等待模拟任务，再关闭全部连接。该组织沿用 [FastAPI lifespan](https://fastapi.tiangolo.com/advanced/events/) 和 [WebSocket 生命周期](https://fastapi.tiangolo.com/advanced/websockets/) 的接口。
-
-## 协议和单位
-
-`GET /api/v1/health` 返回 HTTP 200，按本次明确要求使用独立 Health 响应，不套管理后台响应壳：
-
-```json
-{ "status": "ok", "service": "ForestFireAI Backend" }
-```
-
-`/ws/telemetry` 是仅推送端点，每个 JSON 文本消息对应一架 UAV：
+订阅 `forestfire/uav/+/telemetry`，发布 `forestfire/uav/{uavId}/telemetry`。Topic ID 必须逐字匹配 payload ID，否则拒绝并记录 UAV ID mismatch。前缀可配置，不接受空层级、通配符。
 
 ```json
 {
-  "type": "telemetry",
   "uavId": "mock-uav-1",
   "timestamp": "2026-09-07T00:00:00.000000Z",
   "longitude": 119.52,
@@ -92,113 +142,99 @@ backend/
 }
 ```
 
-时间是 UTC ISO 8601，前端适配为 Telemetry Store 已有的 epoch 毫秒。经纬度为 WGS84 度，高度是相对起飞点 m，速度 m/s，航向 `[0,360)` 度，电量和信号为 `[0,100]` 百分比。合法状态沿用 online/offline/mission/charging/maintenance/warning；本模拟器输出 online 或低电量 warning。没有客户端控制命令，输入消息不触发设备动作。
+经纬度 WGS84 度，高度为相对起飞点 m，速度 m/s，航向 [0,360)，电量/信号 [0,100]。时间必须带时区，模型统一转 UTC；非法 JSON、缺字段、非法范围、非有限数、未知 status 均隔离，单帧最大 16 KiB。status 为 online/offline/mission/charging/maintenance/warning。MQTT 可省略 type，模型补齐 `type: telemetry`；`/ws/telemetry` 输出协议不变。
 
-前端适配器验证消息类型、长度、时间及字段范围，忽略非法消息；Telemetry Store 继续拒绝未知 ID、未来时间及重复/乱序包。后端与浏览器时钟需一致；V1 不做时钟偏移估计。断线期间保留最后遥测，按每架采集时间超过五秒判 offline；一架更新不会延长另一架的时效。
+GET `/api/v1/health`：
 
-## 模拟器与配置
+```json
+{ "status": "ok", "service": "ForestFireAI Backend" }
+```
 
-五架 ID 为 `mock-uav-1/3/6/7/8`，与现有前端八架资产中的可模拟设备一致。按当前位置、航向、速度和时间积分移动，航向缓慢变化；接近边界转向中心，边缘兜底反弹。高度与信号小幅变化，电量随模拟时间下降。长时间暂停最多积分两秒，避免恢复后大幅跳跃。后端只保存五架最新状态，不保存无限轨迹；前端 UAVTrackLayer 继续每架最多 300 点。
+GET `/api/v1/system/status`：
 
-集中配置见 `app/core/config.py`，可通过相应环境变量覆盖：
+```json
+{
+  "backend": "ok",
+  "mqtt": "connected",
+  "telemetryInputMode": "mqtt",
+  "connectedWebSocketClients": 2
+}
+```
 
-| 配置                         | 默认值                           | 环境变量                                           |
-| ---------------------------- | -------------------------------- | -------------------------------------------------- |
-| telemetry_interval           | 1 秒                             | FORESTFIRE_TELEMETRY_INTERVAL                      |
-| simulation_bounds            | 119.45–119.95° E，30.08–30.42° N | FORESTFIRE_SIMULATION_BOUNDS（JSON）               |
-| battery_drain_rate           | 0.005 个百分点/秒                | FORESTFIRE_BATTERY_DRAIN_RATE                      |
-| offline_timeout              | 5 秒                             | FORESTFIRE_OFFLINE_TIMEOUT                         |
-| send_timeout / close_timeout | 各 0.25 秒                       | FORESTFIRE_SEND_TIMEOUT / FORESTFIRE_CLOSE_TIMEOUT |
+mqtt 为 disabled/disconnected/connecting/connected/reconnecting/error。两个诊断端点按本任务要求直接返回 JSON，不套管理后台响应壳。浏览器打开 `http://127.0.0.1:8000/api/v1/system/status` 可查看。日志包含 MQTT/WebSocket 连接变化与坏消息，不输出正常逐帧遥测、密码或完整坏 payload。
 
-`offline_timeout` 记录后端契约默认值；实际 UI 离线判定由前端 `simulator/config.ts` 的 `offlineTimeout` 执行，修改阈值时需保持两侧一致。本阶段没有远程配置协议。
+## 配置
 
-## 前端数据源和恢复
+读取进程环境变量，不自动加载 .env；修改后重启服务。原有 FORESTFIRE 配置兼容。
 
-`src/views/uav/telemetry/dataSources/` 提供 `TelemetryDataSource`：`start/stop/subscribe/unsubscribe/subscribeState`。`localSimulatorSource.ts` 包装现有模拟器并保留暂停控制，`websocketSource.ts` 管理浏览器原生 WebSocket。`src/stores/uavSimulator.ts` 沿用现有会话控制入口，互斥选择来源并将包送入 `useTelemetryStore.updateTelemetry`；UI 和 Leaflet 不直接创建连接。
+| 环境变量                                           | 默认                             | 含义                                |
+| -------------------------------------------------- | -------------------------------- | ----------------------------------- |
+| TELEMETRY_INPUT_MODE                               | direct                           | direct / mqtt                       |
+| MQTT_HOST / MQTT_PORT                              | 127.0.0.1 / 1883                 | Broker 地址                         |
+| MQTT_USERNAME / MQTT_PASSWORD                      | 空                               | 可选凭据，不记录日志                |
+| MQTT_TOPIC_PREFIX                                  | forestfire/uav                   | 不含末尾斜线                        |
+| MQTT_KEEPALIVE                                     | 10                               | 秒                                  |
+| MQTT_RECONNECT_MAX                                 | 30                               | 最大退避秒数                        |
+| MQTT_QUEUE_SIZE                                    | 256                              | 接收队列帧数上限                    |
+| MQTT_MAX_PAYLOAD_BYTES                             | 16384                            | 单帧字节上限                        |
+| MQTT_POLL_INTERVAL                                 | 0.02                             | 队列空闲检查秒间隔                  |
+| FORESTFIRE_SIMULATOR_ENABLED                       | true                             | false 时仅接外部 Publisher          |
+| FORESTFIRE_TELEMETRY_INTERVAL                      | 1                                | 模拟周期秒数                        |
+| FORESTFIRE_SIMULATION_BOUNDS                       | 119.45–119.95° E，30.08–30.42° N | west/east/south/north JSON          |
+| FORESTFIRE_BATTERY_DRAIN_RATE                      | 0.005                            | 每秒电量百分点                      |
+| FORESTFIRE_OFFLINE_TIMEOUT                         | 5                                | 契约默认秒数，UI 由前端独立阈值判定 |
+| FORESTFIRE_SEND_TIMEOUT / FORESTFIRE_CLOSE_TIMEOUT | 0.25 / 0.25                      | WebSocket 超时秒数                  |
 
-连接状态为 disconnected/connecting/connected/reconnecting/error；重连间隔为 1、2、4、8、16、30 秒，之后封顶 30 秒。收到有效遥测才重置退避，避免只握手就立即断开的连接持续高频重试；握手超过 10 秒也进入重连。错误原因显示在面板。旧连接回调带代次校验，stop 时解绑监听器、取消握手与重连计时，迟到消息不能写回。
+## 兼容与限制
 
-地图和资产页共享一份数据源，多个页面 owner 不重复创建连接；最后一个相关页面停用/卸载后关闭连接和时钟，再激活按此前运行意愿恢复。手动断开期间仍有一个视图级离线时钟，避免把“无连接”等同于所有 UAV 状态；离开相关页面则停止此时钟。退出登录或切换租户沿用现有会话清理，停止来源并清空遥测，不自动续用旧会话连接。
+Mock ID 为 mock-uav-1/3/6/7/8，与前端资产一致。连续运动、缓慢转向、高度/信号变化、电量下降与边界反弹复用现有模型；停顿后单步最多积分两秒。Broker 断开时 Simulator 仍推进运动状态。
 
-地图侧没有第二套逻辑：继续从 UAV 组合视图读取位置并复用 Marker，通过 `setLatLng`、`setPopupContent`、`setLatLngs` 更新。UAVLayer 和 UAVTrackLayer 的显隐、透明度、pane 与 Drawing 隔离维持原有实现。
+Telemetry Store 继续拒绝未知 ID、未来时间、重复/乱序帧，按单架最后遥测超过五秒判 offline，新帧恢复状态。Marker 复用 setLatLng，Popup/详情/轨迹同源更新，每架轨迹最多 300 点。UAVLayer/UAVTrackLayer 显隐、透明度及 Drawing 隔离不变。
 
-## 验证
+仅单进程、单模拟器开发链路，不要开启多个 Uvicorn worker。没有历史重放、可靠投递、持久化、认证、真实控制或时钟校正。重启 Python 回到初始位置；前端新增资产不会自动加入后端舰队，删除后前端拒绝该 ID 遥测。
 
-后端（在 backend 目录与已安装测试依赖的环境）：
+## 测试
+
+backend 目录：
 
 ```powershell
 python -m pytest -q tests
 ```
 
-前端（仓库根目录）：
+两个真实 Broker 测试需提供 Mosquitto 可执行文件（使用随机回环端口、临时配置，不安装服务）：
+
+```powershell
+$env:MOSQUITTO_EXECUTABLE = 'C:\path\to\mosquitto.exe'
+python -m pytest -q tests
+```
+
+未提供时明确 skip，不能视为真实链路通过。覆盖 Broker 初始不可用、运行中断开恢复、Simulator/Publisher、坏包隔离和多客户端分发。
+
+仓库根目录：
 
 ```powershell
 pnpm exec node --test src/views/uav/telemetry/dataSources.test.mjs src/views/uav/simulator/simulator.test.mjs src/views/uav/uav.test.mjs src/views/dashboard/dashboard.test.mjs src/views/dashboard/components/map/gis-tools.test.mjs
-pnpm exec node --test src/views/dashboard/components/map/testing/browser-smoke.test.mjs src/views/uav/testing/simulator-browser.test.mjs
+pnpm exec node --test --test-concurrency=1 src/views/dashboard/components/map/testing/browser-smoke.test.mjs src/views/uav/testing/simulator-browser.test.mjs
 ```
 
-真实 Python → Chromium 端到端测试会自行启动、停止、重启临时本机后端，测试真实网络断线与恢复；不用上游 API 或外部瓦片：
+真实 Python → Chromium（自动启动/重启临时本机 Uvicorn）：
 
 ```powershell
 $env:FORESTFIRE_PYTHON = (Resolve-Path backend/.venv/Scripts/python.exe).Path
 $env:FF_BACKEND_SMOKE = '1'
+$env:TELEMETRY_INPUT_MODE = 'direct'
 pnpm exec node --test src/views/uav/testing/simulator-browser.test.mjs
-Remove-Item Env:FF_BACKEND_SMOKE
 ```
 
-`FORESTFIRE_PYTHON` 可指定任何安装了 requirements 的解释器；`GIS_BROWSER` 可指定 Chrome/Edge/Chromium。没有浏览器时测试明确跳过，不能视为浏览器验证通过。本次使用已有 Python 3.13.11 环境，无全局安装或升级。
+MQTT Chromium：先启动 Broker，再将 TELEMETRY_INPUT_MODE 改 mqtt，配置 MQTT_HOST/PORT，运行同一测试。确保 FORESTFIRE_SIMULATOR_ENABLED=true。GIS_BROWSER 可指定 Chromium/Chrome/Edge；缺少浏览器明确 skip。
 
-## 当前限制
+## 常见错误
 
-仅 DEV / MOCK 无认证链路，无真实设备和持久化。不替代现有管理后台后端，不实现文档中规划的认证实时总线。前端资产 CRUD 不同步到 Python：新增资产不会自动进入后端模拟，删除后前端拒绝该 ID 的后续遥测；重启后端恢复五机初值，轨迹中会出现此次重启的位移变化。不同来源的位置也可能不同，因此切换来源清空旧轨迹。没有断线期间历史帧重放、服务器时钟校正或多进程共享状态。
-
-## 本次验证与文件清单
-
-后端测试 8/8、前端自动化 60/60 通过。Chromium 原有 GIS/资产 19 个场景、本地模拟器 5 组场景、真实 Python 后端链路 5 组场景均通过。真实链路测试包含停止/重启 Uvicorn、自动重连、按遥测时间离线、页面切换以及 Marker 身份保持。TypeScript、修改代码 ESLint / Stylelint / Prettier、Production Build、`git diff --check` 通过。根 README 只检查新增段落并保留原有模板排版；Python 不使用 Prettier。
-
-前端无新增依赖；新增后端依赖文件记录四个运行包与两个测试包，验证使用本机已有环境。没有删除文件，没有执行 git commit / push。
-
-修改 10 个文件：
-
-```text
-.env.development
-README.md
-types/env.d.ts
-src/stores/telemetry.ts
-src/stores/uavSimulator.ts
-src/views/uav/README.md
-src/views/uav/index.vue
-src/views/uav/components/UavDetail.vue
-src/views/uav/components/UavSimulatorPanel.vue
-src/views/uav/testing/simulator-browser.test.mjs
-```
-
-新增 25 个文件：
-
-```text
-backend/.gitignore
-backend/README.md
-backend/requirements.txt
-backend/requirements-dev.txt
-backend/app/__init__.py
-backend/app/main.py
-backend/app/api/__init__.py
-backend/app/api/routes.py
-backend/app/core/__init__.py
-backend/app/core/config.py
-backend/app/simulator/__init__.py
-backend/app/simulator/fleet.py
-backend/app/simulator/motion.py
-backend/app/telemetry/__init__.py
-backend/app/telemetry/models.py
-backend/app/websocket/__init__.py
-backend/app/websocket/manager.py
-backend/tests/test_backend.py
-src/views/uav/telemetry/config.ts
-src/views/uav/telemetry/dataSources.test.mjs
-src/views/uav/telemetry/dataSources/types.ts
-src/views/uav/telemetry/dataSources/localSimulatorSource.ts
-src/views/uav/telemetry/dataSources/websocketSource.ts
-src/views/uav/testing/backendHarness.mjs
-src/views/uav/testing/backendBrowserChecks.mjs
-```
+- MQTT reconnecting：检查 Docker、端口映射、MQTT_HOST/PORT；Broker 恢复后自动重连。
+- invalid payload：核对 JSON、必填字段、带时区时间、范围、status。
+- UAV ID mismatch：Topic 与 payload 的 ID 必须完全相同。
+- WebSocket connected 但 UAV offline：连接不代表设备在线；检查 Broker、Publisher 和两端时钟。
+- 后端有数据但地图没有：前端只显示已有资产 ID；任意 UAV001 不会自动创建资产。
+- 轨迹交替跳动：不要同时启动内置模拟器与相同 ID 的独立 Publisher。
+- status 显示 disabled：环境变量必须设置在启动 Uvicorn 的同一终端。
+- Docker 命令不存在：准备 Docker Compose 后再运行容器；本次机器无 Docker，使用工作区解包的 Mosquitto 2.0.22 验证真实网络，未执行 Compose 容器启动。

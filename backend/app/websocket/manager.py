@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from fastapi import WebSocket
+from app.telemetry.models import TelemetryMessage
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +16,12 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.clients.add(websocket)
+        logger.info("WebSocket client connected")
 
     async def disconnect(self, websocket: WebSocket):
-        self.clients.discard(websocket)
+        if websocket in self.clients:
+            self.clients.discard(websocket)
+            logger.info("WebSocket client disconnected")
         try:
             await asyncio.wait_for(websocket.close(), self.close_timeout)
         except Exception:
@@ -34,6 +38,9 @@ class ConnectionManager:
     async def broadcast(self, message: dict):
         # Snapshot permits a connection to disappear while another send is awaiting.
         await asyncio.gather(*(self._send(client, message) for client in tuple(self.clients)))
+
+    async def handle_telemetry(self, message: TelemetryMessage):
+        await self.broadcast(message.model_dump(mode="json"))
 
     async def close_all(self):
         await asyncio.gather(*(self.disconnect(client) for client in tuple(self.clients)))

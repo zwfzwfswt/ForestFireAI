@@ -45,7 +45,12 @@ def test_two_clients_share_fleet_and_disconnect_is_isolated():
             later = [first.receive_json() for _ in range(15)]
             assert later[-1]["timestamp"] > first_packets[-1]["timestamp"]
             assert not app.state.simulator_task.done()
-        # TestClient context waits for the endpoint's finally cleanup.
+        # The in-process transport can return before the route's finally runs.
+        async def wait_closed():
+            async with asyncio.timeout(1):
+                while app.state.connections.clients:
+                    await asyncio.sleep(0.01)
+        client.portal.call(wait_closed)
         assert len(app.state.connections.clients) == 0
 
 
@@ -155,7 +160,7 @@ class ConnectionTests(unittest.IsolatedAsyncioTestCase):
         await manager.connect(good)
         await manager.connect(FakeClient(fail=True))
         simulator = UavSimulator(Settings(telemetry_interval=0.01))
-        task = asyncio.create_task(simulator.run(manager))
+        task = asyncio.create_task(simulator.run(manager.handle_telemetry))
         try:
             for _ in range(100):
                 if len(good.received) >= 15:
