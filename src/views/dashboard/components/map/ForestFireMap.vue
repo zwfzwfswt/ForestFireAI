@@ -20,6 +20,13 @@
         @toggle="drawingVisible ? drawing.hide() : drawing.show()"
         @reset="resetView"
       />
+      <MapBusinessLayerPanel
+        :layers="businessStates"
+        :ready="ready"
+        @visible="business.setVisible"
+        @opacity="business.setOpacity"
+        @move="business.move"
+      />
     </div>
     <div class="forest-map__body">
       <div
@@ -36,7 +43,7 @@
     </div>
     <MapCoordinateDisplay :coordinate="coordinate" :zoom="zoom" />
     <small class="forest-map__note">
-      在线底图 · 非实时影像；业务统计与告警仍为
+      在线底图 · 非实时影像；空间图层、业务统计与告警均为
       Mock。绘制仅本页临时保存，离开后清空；测量为球面近似。
     </small>
   </section>
@@ -48,11 +55,13 @@ import MapCoordinateDisplay from "./MapCoordinateDisplay.vue";
 import MapFullscreenControl from "./MapFullscreenControl.vue";
 import MapLayerControl from "./MapLayerControl.vue";
 import MapToolbar from "./MapToolbar.vue";
+import MapBusinessLayerPanel from "./MapBusinessLayerPanel.vue";
 import { useForestMap } from "./useForestMap";
 const shell = ref<HTMLElement | null>(null);
 const container = ref<HTMLElement | null>(null);
-const { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView } =
+const { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView, business } =
   useForestMap(container);
+const { states: businessStates } = business;
 const { mode, status, count, visible: drawingVisible, canFinish } = drawing;
 </script>
 <style scoped lang="scss">

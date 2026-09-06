@@ -6,6 +6,8 @@ import { createMapSession } from "./mapSession";
 import { createMapLayerRegistry } from "./layers/mapLayerRegistry";
 import type { MapLayerRegistry } from "./layers/mapLayerRegistry";
 import { useMapDrawing } from "./composables/useMapDrawing";
+import { useBusinessLayers } from "./composables/useBusinessLayers";
+import { registerDrawingPanes } from "./layers/layerPanes";
 
 export function useForestMap(container: Ref<HTMLElement | null>) {
   const coordinate = ref<{ lat: number; lng: number } | null>(null);
@@ -15,6 +17,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
   const error = ref("");
   const ready = ref(false);
   const drawing = useMapDrawing();
+  const business = useBusinessLayers();
   let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
@@ -28,6 +31,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    business.detach();
     drawing.detach();
     observer?.disconnect();
     observer = undefined;
@@ -61,8 +65,10 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
           maxZoom: mapConfig.maxZoom,
           zoomControl: false,
         });
-        layers = createMapLayerRegistry(map, () => L.layerGroup());
+        registerDrawingPanes(map);
+        layers = createMapLayerRegistry(map, () => L.layerGroup(), business.publish);
         const baseMap = layers.register("BaseMapLayer");
+        business.attach(layers, L);
         drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
         L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
@@ -128,5 +134,5 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
   onActivated(start);
   onDeactivated(() => session.stop());
   onBeforeUnmount(() => session.stop());
-  return { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView };
+  return { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView, business };
 }

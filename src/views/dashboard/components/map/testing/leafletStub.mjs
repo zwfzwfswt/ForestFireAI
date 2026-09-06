@@ -54,6 +54,27 @@ export function createLeafletStub() {
   const L = {
     layerGroup: () => new Group(),
     circleMarker: (p, o) => new Layer("point", p, o),
+    marker: (p, o) => new Layer("marker", p, o),
+    divIcon: (options) => options,
+    geoJSON(data, options) {
+      const group = new Group();
+      for (const feature of data.features ?? []) {
+        const geometry = feature.geometry;
+        const layer =
+          geometry.type === "Point"
+            ? options.pointToLayer(feature, {
+                lat: geometry.coordinates[1],
+                lng: geometry.coordinates[0],
+              })
+            : new Layer(
+                geometry.type === "Polygon" ? "polygon" : "polyline",
+                geometry.coordinates,
+                options.style(feature)
+              );
+        group.addLayer(layer);
+      }
+      return group;
+    },
     polyline: (p, o) => new Layer("polyline", p, o),
     polygon: (p, o) => new Layer("polygon", p, o),
     tooltip: (o) => new Layer("tooltip", undefined, o),
@@ -64,9 +85,22 @@ export function createLeafletStub() {
       let doubleClickEnabled = true;
       const events = new Map();
       const layers = new Set();
+      const panes = new Map();
       const map = {
         events,
         layers,
+        panes,
+        getPane: (name) => panes.get(name),
+        createPane(name) {
+          const pane = {
+            style: {},
+            remove() {
+              this.removed = true;
+            },
+          };
+          panes.set(name, pane);
+          return pane;
+        },
         removed: false,
         center: options.center,
         zoom: options.zoom,

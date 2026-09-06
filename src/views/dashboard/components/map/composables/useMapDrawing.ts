@@ -6,6 +6,7 @@ import { distance, polygonError, wrapLongitude } from "../utils/geometry";
 import type { GeoPoint } from "../utils/geometry";
 import { isAreaMode, measureDrawing } from "./useMapMeasure";
 import type { DrawingMode } from "./useMapMeasure";
+import { drawingPane, drawingLabelPane } from "../layers/layerPanes";
 
 type Leaflet = typeof LeafletModule;
 const prompts: Record<DrawingMode, string> = {
@@ -91,7 +92,13 @@ export function useMapDrawing() {
     const vertices = cursor ? [...points, cursor] : points;
     const coordinates = vertices.map((p): [number, number] => [p.lat, p.lng]);
     if (!shape) {
-      const options = { color: "#16a085", weight: 3, fillOpacity: 0.18, interactive: false };
+      const options = {
+        color: "#16a085",
+        weight: 3,
+        fillOpacity: 0.18,
+        interactive: false,
+        pane: drawingPane,
+      };
       shape = (
         isAreaMode(mode.value) ? L.polygon(coordinates, options) : L.polyline(coordinates, options)
       ).addTo(draft);
@@ -111,6 +118,7 @@ export function useMapDrawing() {
     nodeCount.value = points.length;
     L.circleMarker([point.lat, point.lng], {
       radius: mode.value === "point" ? 6 : 3,
+      pane: drawingPane,
       color: "#16a085",
       fillOpacity: 1,
       interactive: false,
@@ -154,7 +162,13 @@ export function useMapDrawing() {
     const result = measureDrawing(mode.value, points);
     const anchor = points[points.length - 1];
     // 标签也是 DrawingLayer 的子层，隐藏或清除不会残留在地图根层。
-    L.tooltip({ permanent: true, direction: "top", interactive: false, className: "gis-result" })
+    L.tooltip({
+      permanent: true,
+      direction: "top",
+      interactive: false,
+      className: "gis-result",
+      pane: drawingLabelPane,
+    })
       .setLatLng([anchor.lat, anchor.lng])
       .setContent(result)
       .addTo(draft);

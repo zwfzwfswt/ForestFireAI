@@ -59,6 +59,78 @@ async function browserChecks() {
   };
   try {
     await waitFor(() => document.querySelector(".forest-map") && state().ready);
+    const businessState = (id) => state().businessStates.find((layer) => layer.id === id);
+    const pane = (id) => document.querySelector(`.leaflet-${businessState(id).pane}-pane`);
+    check(state().businessStates.length === 18, "业务图层注册数量错误");
+    check(
+      pane("FireEventLayer").querySelectorAll(".ff-business-symbol").length === 2,
+      "两个 Mock 火点未加载"
+    );
+    check(
+      pane("AdministrativeLayer").querySelectorAll("path").length === 1,
+      "行政区 GeoJSON 未加载"
+    );
+    check(pane("RoadLayer").querySelectorAll("path").length === 1, "道路 GeoJSON 未加载");
+    check(pane("HighRiskLayer").querySelectorAll("path").length === 1, "风险面 GeoJSON 未加载");
+    check(
+      pane("FireStationLayer").querySelectorAll(".ff-business-symbol").length === 1,
+      "消防站未加载"
+    );
+    check(
+      pane("WaterSourceLayer").querySelectorAll(".ff-business-symbol").length === 1,
+      "水源未加载"
+    );
+    check(
+      Number(pane("HighRiskLayer").style.zIndex) < Number(pane("FireEventLayer").style.zIndex),
+      "风险与火情层级错误"
+    );
+    check(
+      document.querySelector(".leaflet-ff-drawing-pane").style.zIndex === "900",
+      "Drawing pane 非顶层"
+    );
+    passed.push("业务注册、Mock GeoJSON 与 pane 层级");
+    const panel = document.querySelector(".business-panel");
+    panel.open = true;
+    panel.querySelectorAll("details").forEach((element) => (element.open = true));
+    check(panel.querySelectorAll("details").length === 6, "分类未折叠组织");
+    const fireCheckbox = panel.querySelector(
+      '[data-layer-id="FireEventLayer"] input[type="checkbox"]'
+    );
+    fireCheckbox.click();
+    await nextTick();
+    check(
+      !businessState("FireEventLayer").visible &&
+        !pane("FireEventLayer").querySelector(".ff-business-symbol"),
+      "面板隐藏火情失败"
+    );
+    fireCheckbox.click();
+    await nextTick();
+    check(
+      pane("FireEventLayer").querySelectorAll(".ff-business-symbol").length === 2,
+      "面板显示火情失败"
+    );
+    const slider = panel.querySelector('[data-layer-id="RoadLayer"] input[type="range"]');
+    slider.value = "0.35";
+    slider.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    check(
+      pane("RoadLayer").style.opacity === "0.35" && businessState("RoadLayer").opacity === 0.35,
+      "道路透明度未应用"
+    );
+    const fireSlider = panel.querySelector('[data-layer-id="FireEventLayer"] input[type="range"]');
+    fireSlider.value = "0.5";
+    fireSlider.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    check(pane("FireEventLayer").style.opacity === "0.5", "Marker 透明度未应用");
+    panel.querySelector('[aria-label="水源上移"]').click();
+    await nextTick();
+    check(
+      pane("WaterSourceLayer").style.zIndex === "570" &&
+        pane("FireStationLayer").style.zIndex === "560",
+      "面板顺序未生效"
+    );
+    panel.open = false;
+    passed.push("分类面板显隐、透明度与顺序控制");
     await button("绘制点");
     await mouse("click", 140, 120);
     check(labels().length === 1 && /经度.*纬度/.test(labels()[0].textContent), "点坐标标签缺失");
@@ -93,19 +165,28 @@ async function browserChecks() {
     await button("隐藏绘制");
     await waitFor(() => labels().length === 0);
     check(
-      labels().length === 0 && !document.querySelector(".leaflet-overlay-pane path"),
+      labels().length === 0 && !document.querySelector(".leaflet-ff-drawing-pane path"),
       "隐藏后残留图形/标签"
     );
     await button("显示绘制");
     check(labels().length === count, "显示后结果未恢复");
     const tiles = document.querySelector(".leaflet-tile-pane").childElementCount;
+    const symbols = document.querySelectorAll(".ff-business-symbol").length;
     await button("清除临时绘制");
     await waitFor(() => labels().length === 0);
     check(
-      labels().length === 0 && !document.querySelector(".leaflet-overlay-pane path"),
+      labels().length === 0 && !document.querySelector(".leaflet-ff-drawing-pane path"),
       "清除后残留图形/标签"
     );
     check(document.querySelector(".leaflet-tile-pane").childElementCount === tiles, "清除误删底图");
+    check(
+      document.querySelectorAll(".ff-business-symbol").length === symbols && symbols === 4,
+      "清除误删业务标记"
+    );
+    check(
+      pane("HighRiskLayer").querySelector("path") && pane("RoadLayer").querySelector("path"),
+      "清除误删业务线面"
+    );
     passed.push("DrawingLayer 显示、隐藏、清除与底图隔离");
     document.querySelector(".leaflet-control-zoom-in").click();
     await waitFor(() => state().zoom === 10);
@@ -120,6 +201,12 @@ async function browserChecks() {
     active.value = true;
     await nextTick();
     await waitFor(() => state().ready);
+    check(
+      businessState("RoadLayer").opacity === 0.35 && pane("RoadLayer").style.opacity === "0.35",
+      "重建未恢复透明度"
+    );
+    check(pane("WaterSourceLayer").style.zIndex === "570", "重建未恢复层级");
+    check(document.querySelectorAll(".ff-business-symbol").length === 4, "重建业务图层缺失或重复");
     check(state().mode === null && state().count === 0, "重新激活残留工具/结果");
     await button("绘制点");
     await mouse("click", 140, 120);
@@ -213,7 +300,7 @@ test("Chromium 真实 Vue/Leaflet GIS 工具烟雾验证", { skip: !browser, tim
     assert.ok(match, "浏览器未输出测试结果，请检查浏览器/Vite 运行环境");
     const result = JSON.parse(match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
     assert.equal(result.error, undefined, JSON.stringify(result));
-    assert.equal(result.passed.length, 10);
+    assert.equal(result.passed.length, 12);
   } finally {
     child?.kill();
     await server.close();

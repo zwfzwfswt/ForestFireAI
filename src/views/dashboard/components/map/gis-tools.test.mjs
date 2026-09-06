@@ -41,6 +41,182 @@ const { distance, lineLength, polygonArea, polygonError, formatArea, formatDista
   await load("utils/geometry.ts");
 const { mapConfig } = await load("mapConfig.ts");
 const { useForestMap } = await load("useForestMap.ts");
+const { useBusinessLayers } = await load("composables/useBusinessLayers.ts");
+const { layerDefinitions, layerCategories } = await load("layers/layerDefinitions.ts");
+const { registerDrawingPanes, layerBands } = await load("layers/layerPanes.ts");
+const { mockMapLayers } = await load("mock/mockMapLayers.ts");
+
+function setupBusiness() {
+  const { L } = createLeafletStub();
+  const map = L.map(createContainer());
+  const business = useBusinessLayers();
+  const registry = createMapLayerRegistry(map, L.layerGroup, business.publish);
+  registerDrawingPanes(map);
+  business.attach(registry, L);
+  return { L, map, business, registry };
+}
+
+test("六类十八个图层元数据注册，六组 Mock 共七个 GeoJSON 要素正确加载", () => {
+  const { registry, business, map } = setupBusiness();
+  assert.deepEqual(
+    layerCategories.map((c) => c.name),
+    ["基础地理", "森林资源", "火灾监测", "无人机", "火险信息", "应急资源"]
+  );
+  assert.equal(business.states.value.length, 18);
+  assert.equal(registry.list().filter((layer) => layer.status === "ready").length, 6);
+  assert.equal(
+    registry.list().reduce((sum, layer) => sum + layer.featureCount, 0),
+    7
+  );
+  for (const definition of layerDefinitions) {
+    const state = registry.getState(definition.id);
+    for (const field of ["id", "name", "category", "visible", "opacity", "zIndex", "type"])
+      assert.ok(field in state);
+    if (definition.source === "mock") {
+      const geojson = registry.get(definition.id).getLayers()[0];
+      assert.equal(geojson.getLayers().length, mockMapLayers[definition.id].features.length);
+      assert.ok(geojson.getLayers().every((layer) => layer.options.pane === state.pane));
+      assert.equal(map.hasLayer(registry.get(definition.id)), true);
+    } else {
+      assert.equal(state.status, "unconfigured");
+      assert.equal(state.visible, false);
+      assert.equal(registry.get(definition.id), undefined, "未配置项不创建空组");
+    }
+  }
+  const fires = registry.get("FireEventLayer").getLayers()[0].getLayers();
+  assert.deepEqual(fires[0].coordinates, { lat: 30.27, lng: 119.68 });
+  assert.match(fires[0].options.title, /Mock/);
+  assert.match(fires[0].options.icon.html, /火/);
+  assert.equal(fires[0].options.interactive, false, "业务符号不拦截绘制点击");
+});
+
+test("业务显隐/透明度在 pane 整体生效，隐藏后修改并显示保留状态", () => {
+  const { registry, map, business } = setupBusiness();
+  for (const id of ["AdministrativeLayer", "RoadLayer", "FireEventLayer", "HighRiskLayer"]) {
+    const pane = map.getPane(registry.getState(id).pane);
+    const group = registry.get(id);
+    registry.hide(id);
+    assert.equal(registry.getState(id).visible, false);
+    assert.equal(map.hasLayer(group), false);
+    registry.setOpacity(id, 0.35);
+    registry.show(id);
+    assert.equal(map.hasLayer(group), true);
+    assert.equal(pane.style.opacity, "0.35");
+    registry.setOpacity(id, 0);
+    assert.equal(pane.style.visibility, "hidden");
+    registry.setOpacity(id, 1);
+    assert.equal(pane.style.opacity, "1");
+    assert.equal(pane.style.visibility, "");
+  }
+  registry.hide("FireEventLayer");
+  assert.equal(business.states.value.find((s) => s.id === "FireEventLayer").visible, false);
+  const state = registry.getState("FireEventLayer");
+  assert.throws(() => {
+    state.visible = true;
+  }, TypeError);
+  assert.equal(registry.getState("FireEventLayer").visible, false);
+  assert.throws(() => registry.setOpacity("FireEventLayer", NaN), /透明度/);
+  assert.throws(() => registry.setOpacity("FireEventLayer", 1.1), /透明度/);
+  assert.throws(() => registry.setVisible("DrawingLayer", false), /未注册业务图层/);
+});
+
+test("图层层级语义区间、调序和 Drawing 顶层，不依赖添加顺序", () => {
+  const { registry, map } = setupBusiness();
+  for (const state of registry.list()) {
+    const [min, max] = layerBands[state.band];
+    assert.ok(state.zIndex >= min && state.zIndex <= max);
+    if (state.status === "ready")
+      assert.equal(map.getPane(state.pane).style.zIndex, String(state.zIndex));
+  }
+  assert.equal(map.getPane("ff-drawing").style.zIndex, "900");
+  assert.equal(map.getPane("ff-drawing-label").style.zIndex, "910");
+  registry.move("WaterSourceLayer", "up");
+  assert.equal(registry.getState("WaterSourceLayer").zIndex, 570);
+  assert.equal(registry.getState("FireStationLayer").zIndex, 560);
+  registry.move("WaterSourceLayer", "down");
+  assert.equal(registry.getState("WaterSourceLayer").zIndex, 560);
+  registry.setZIndex("RoadLayer", 430);
+  assert.equal(map.getPane(registry.getState("RoadLayer").pane).style.zIndex, "430");
+  assert.throws(() => registry.setZIndex("RoadLayer", 900), /越界/);
+  assert.throws(() => registry.setZIndex("WaterSourceLayer", 570), /占用/);
+  assert.equal(registry.getState("RoadLayer").zIndex, 430);
+});
+
+test("重复/非法注册拒绝，空数据和工厂异常有独立状态，支持五种类型", () => {
+  const { L } = createLeafletStub();
+  const map = L.map(createContainer());
+  const registry = createMapLayerRegistry(map, L.layerGroup);
+  const base = layerDefinitions[0];
+  for (const [index, type] of ["marker", "polyline", "polygon", "geojson", "raster"].entries()) {
+    const definition = { ...base, id: `test-${type}`, type, zIndex: 350 + index };
+    registry.registerBusiness(definition, (pane) => ({
+      layer: L.layerGroup(),
+      featureCount: pane ? 1 : 0,
+    }));
+    registry.setOpacity(definition.id, 0.5);
+    assert.equal(map.getPane(registry.getState(definition.id).pane).style.opacity, "0.5");
+  }
+  assert.throws(() => registry.registerBusiness({ ...base, id: "DrawingLayer" }), /保留/);
+  assert.throws(() => registry.registerBusiness({ ...base, id: "test-marker" }), /重复/);
+  assert.throws(() => registry.registerBusiness({ ...base, id: "bad", zIndex: 900 }), /越界/);
+  assert.throws(
+    () => registry.registerBusiness({ ...base, id: "bad", category: "unknown" }),
+    /分类/
+  );
+  assert.throws(() => registry.registerBusiness({ ...base, id: "bad", type: "unknown" }), /类型/);
+  registry.registerBusiness({ ...base, id: "empty", zIndex: 380 }, () => ({
+    layer: L.layerGroup(),
+    featureCount: 0,
+  }));
+  assert.equal(registry.getState("empty").status, "empty");
+  registry.registerBusiness({ ...base, id: "failed", zIndex: 381 }, () => {
+    throw new Error("invalid geometry");
+  });
+  assert.equal(registry.getState("failed").status, "error");
+  assert.equal(registry.getState("failed").visible, false);
+  assert.equal(registry.getState("failed").error, "invalid geometry");
+  assert.equal(registry.get("failed"), undefined);
+  registry.dispose();
+  registry.dispose();
+  assert.equal(map.layers.size, 0);
+  assert.equal(registry.list().length, 0);
+  assert.ok([...map.panes.values()].every((pane) => pane.removed));
+  assert.throws(() => registry.registerBusiness(base), /已销毁/);
+});
+
+test("真实业务组与 DrawingLayer 双向隔离，清除草稿不改变业务状态", () => {
+  const { registry, map, L } = setupBusiness();
+  const drawing = useMapDrawing();
+  drawing.attach(map, L, registry);
+  const before = registry.list();
+  const businessGroups = before.filter((s) => s.status === "ready").map((s) => registry.get(s.id));
+  drawing.select("point");
+  map.fire("click", { latlng: { lat: 30.25, lng: 119.7 } });
+  registry.hide("FireEventLayer");
+  assert.equal(drawing.count.value, 1);
+  registry.show("FireEventLayer");
+  drawing.select("distance");
+  map.fire("click", { latlng: { lat: 30.25, lng: 119.7 } });
+  drawing.clear();
+  assert.deepEqual(registry.list(), before);
+  assert.equal(registry.get("DrawingLayer").getLayers().length, 0);
+  assert.ok(businessGroups.every((group) => map.hasLayer(group) && group.getLayers().length === 1));
+});
+
+test("业务面板按六类折叠、区分未配置和 Mock、提供显隐透明度与顺序控制", async () => {
+  const { business } = setupBusiness();
+  const { default: panel } = await load("MapBusinessLayerPanel.vue");
+  const html = await renderToString(
+    createSSRApp(panel, { layers: business.states.value, ready: true })
+  );
+  assert.equal((html.match(/<details/g) ?? []).length, 7);
+  for (const category of layerCategories) assert.ok(html.includes(category.name));
+  assert.equal((html.match(/type="range"/g) ?? []).length, 6);
+  assert.match(html, /未配置/);
+  assert.match(html, /Mock/);
+  assert.match(html, /消防站上移/);
+  assert.match(html, /水源下移/);
+});
 
 function setup() {
   const { L } = createLeafletStub();
@@ -344,6 +520,9 @@ test("Vue KeepAlive 停用销毁、激活重建 GIS；默认视角读取 mapConf
     app.mount({});
     await flush();
     assert.equal(maps.length, 1);
+    state.business.setVisible("FireEventLayer", false);
+    state.business.setOpacity("RoadLayer", 0.4);
+    state.business.move("WaterSourceLayer", "up");
     state.drawing.select("distance");
     maps[0].fire("click", { latlng: { lat: 30, lng: 119 } });
     maps[0].setView([31, 120], 12);
@@ -366,6 +545,12 @@ test("Vue KeepAlive 停用销毁、激活重建 GIS；默认视角读取 mapConf
     assert.equal(maps.length, 2);
     assert.equal(state.ready.value, true);
     assert.equal(state.drawing.count.value, 0);
+    const restored = state.business.states.value;
+    assert.equal(restored.find((s) => s.id === "FireEventLayer").visible, false);
+    assert.equal(restored.find((s) => s.id === "RoadLayer").opacity, 0.4);
+    assert.equal(restored.find((s) => s.id === "WaterSourceLayer").zIndex, 570);
+    assert.equal(maps[1].getPane("ff-business-RoadLayer").style.opacity, "0.4");
+    assert.equal(restored.filter((s) => s.status === "ready").length, 6);
     state.drawing.select("point");
     maps[1].fire("click", { latlng: { lat: 31, lng: 120 } });
     assert.equal(state.drawing.count.value, 1);

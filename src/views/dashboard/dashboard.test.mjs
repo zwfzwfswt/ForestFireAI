@@ -166,6 +166,13 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
   const events = new Map();
   const tiles = [];
   const map = {
+    getPane() {},
+    createPane() {
+      return { style: {}, remove() {} };
+    },
+    hasLayer() {
+      return true;
+    },
     on(name, fn) {
       events.set(name, fn);
       return this;
@@ -206,6 +213,7 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
     animation = undefined;
   };
   globalThis.__dashboardLeafletTest = {
+    geoJSON: () => ({}),
     map: () => map,
     layerGroup: () => ({
       addTo() {
