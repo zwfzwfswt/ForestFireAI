@@ -1,4 +1,4 @@
-import { ref, shallowRef } from "vue";
+import { onScopeDispose, ref, shallowRef } from "vue";
 import { defineStore } from "pinia";
 import type { UavTelemetry } from "../views/uav/simulator/types";
 import { simulatorConfig } from "../views/uav/simulator/config";
@@ -8,6 +8,19 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
   const latestTelemetryByUavId = shallowRef<Record<string, UavTelemetry>>({});
   const tracksByUavId = shallowRef<Record<string, [number, number][]>>({});
   const now = ref(Date.now());
+  let clock: ReturnType<typeof setInterval> | undefined;
+  function startClock() {
+    now.value = Date.now();
+    if (clock === undefined)
+      clock = globalThis.setInterval(() => {
+        now.value = Date.now();
+      }, simulatorConfig.telemetryInterval);
+  }
+  function stopClock() {
+    if (clock !== undefined) clearInterval(clock);
+    clock = undefined;
+  }
+  onScopeDispose(stopClock);
   let assetIds = new Set<string>();
   function remove(id: string) {
     const latest = { ...latestTelemetryByUavId.value };
@@ -80,6 +93,8 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
     latestTelemetryByUavId,
     tracksByUavId,
     now,
+    startClock,
+    stopClock,
     updateTelemetry,
     getLatestTelemetry,
     isOffline,

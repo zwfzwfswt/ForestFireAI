@@ -4,7 +4,7 @@
       <h1>无人机管理</h1>
       <p>
         Mock 资产台账 · {{ store.list.length }} 架 ·
-        可启动本地模拟遥测，刷新后恢复。高度相对起飞点。
+        可使用本地或后端模拟遥测，刷新后恢复。高度相对起飞点。
       </p>
     </header>
     <UavSimulatorPanel />

@@ -1,0 +1,1 @@
+"""ForestFireAI local telemetry backend."""

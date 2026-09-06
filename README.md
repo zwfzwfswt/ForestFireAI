@@ -26,6 +26,17 @@
 
 </div>
 
+## ForestFireAI 实时遥测开发
+
+新增本地 Python 模拟后端，详见 [后端运行、协议与测试](backend/README.md)。已安装依赖并激活 Python 环境后：
+
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
+
+另开终端，在仓库根目录运行 `pnpm dev`。前端 `.env.development.local` 使用 `VITE_TELEMETRY_SOURCE=local` 保留本地模拟器；或设置 `VITE_TELEMETRY_SOURCE=websocket`、`VITE_TELEMETRY_WS_URL=ws://127.0.0.1:8000/ws/telemetry` 使用后端遥测。修改环境变量后重启 Vite，也可在 DEV / MOCK 面板切换来源。既有管理后台 API 与 SSE 地址保持不变。
+
 ## 项目简介
 
 [vue3-element-admin](https://gitcode.com/youlai/vue3-element-admin) 基于 Vue 3、Vite、TypeScript、Element Plus 构建的企业级中后台前端，配套 [9 种主后端 + 衍生版本](#生态矩阵)（覆盖 Java / Node.js / Go / Python / PHP / C# / Rust 7 种语言）及移动端 [youlai-app](https://gitee.com/youlaiorg/youlai-app)。其他前端版本：[JS 版](https://gitee.com/youlaiorg/vue3-element-admin-js) · [精简版](https://gitee.com/youlaiorg/vue3-element-template) · [NaiveUI 版](https://gitee.com/youlaiorg/vue3-naiveui-admin) · [Electron 桌面版](https://gitee.com/haoxr/youlai-electron)。

@@ -4,6 +4,8 @@
  * Vite 环境变量类型定义
  */
 interface ImportMetaEnv {
+  readonly VITE_TELEMETRY_SOURCE?: "local" | "websocket";
+  readonly VITE_TELEMETRY_WS_URL?: string;
   readonly VITE_APP_PORT: string;
   readonly VITE_APP_BASE_API: string;
   readonly VITE_APP_API_URL: string;

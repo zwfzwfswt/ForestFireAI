@@ -4,7 +4,7 @@
       <p>
         {{
           uav.telemetryUpdatedAt
-            ? "DEV / MOCK SIMULATOR · 本地模拟遥测，非真实设备"
+            ? "DEV / MOCK SIMULATOR · 模拟遥测，非真实设备"
             : "静态 Mock 快照，尚无模拟遥测"
         }}。载荷能力仅作资产登记。
       </p>
