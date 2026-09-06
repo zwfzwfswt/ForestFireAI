@@ -24,6 +24,6 @@ export const emptyPayload = (): UavPayload => ({
   aiBox: false,
 });
 export const snapshotValue = (value: number | null, unit: string) =>
-  value === null ? "暂无快照" : `${value} ${unit}`;
+  value === null ? "暂无快照" : `${Number(value.toFixed(2))} ${unit}`;
 export const formatUavTime = (value: string | null) =>
   value ? `${value.replace("T", " ").replace(/\.\d{3}Z$|Z$/, "")} UTC` : "暂无记录";

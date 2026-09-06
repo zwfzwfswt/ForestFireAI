@@ -18,6 +18,17 @@ export function createLeafletStub() {
       this.coordinates = value;
       return this;
     }
+    setIcon(icon) {
+      this.options.icon = icon;
+      return this;
+    }
+    getElement() {
+      return undefined;
+    }
+    setPopupContent(content) {
+      if (this.popup) this.popup.content = content;
+      return this;
+    }
     setContent(value) {
       this.content = value;
       return this;

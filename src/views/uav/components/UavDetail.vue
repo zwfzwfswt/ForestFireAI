@@ -1,7 +1,13 @@
 <template>
   <ElDrawer v-model="open" title="无人机详情 · Mock" size="min(560px, 100%)" append-to-body>
     <template v-if="uav">
-      <p>静态 Mock 快照，未连接实时遥测。载荷能力仅作资产登记。</p>
+      <p>
+        {{
+          uav.telemetryUpdatedAt
+            ? "DEV / MOCK SIMULATOR · 本地模拟遥测，非真实设备"
+            : "静态 Mock 快照，尚无模拟遥测"
+        }}。载荷能力仅作资产登记。
+      </p>
       <ElDescriptions title="基本信息" :column="1" border>
         <ElDescriptionsItem label="名称">{{ uav.name }}</ElDescriptionsItem>
         <ElDescriptionsItem label="ID">{{ uav.id }}</ElDescriptionsItem>
@@ -17,7 +23,10 @@
           {{ formatUavTime(uav.updatedAt) }}
         </ElDescriptionsItem>
       </ElDescriptions>
-      <ElDescriptions title="状态快照（非实时）" :column="1" border>
+      <ElDescriptions title="状态 / 模拟遥测" :column="1" border>
+        <ElDescriptionsItem label="遥测最后更新">
+          {{ uav.telemetryUpdatedAt ? formatUavTime(uav.telemetryUpdatedAt) : "暂无模拟遥测" }}
+        </ElDescriptionsItem>
         <ElDescriptionsItem label="状态"><UavStatus :status="uav.status" /></ElDescriptionsItem>
         <ElDescriptionsItem label="最后在线">
           {{ formatUavTime(uav.lastOnlineAt) }}
@@ -36,8 +45,12 @@
         </ElDescriptionsItem>
       </ElDescriptions>
       <ElDescriptions title="位置（WGS84）" :column="1" border>
-        <ElDescriptionsItem label="经度">{{ uav.position.longitude }}°</ElDescriptionsItem>
-        <ElDescriptionsItem label="纬度">{{ uav.position.latitude }}°</ElDescriptionsItem>
+        <ElDescriptionsItem label="经度">
+          {{ uav.position.longitude.toFixed(6) }}°
+        </ElDescriptionsItem>
+        <ElDescriptionsItem label="纬度">
+          {{ uav.position.latitude.toFixed(6) }}°
+        </ElDescriptionsItem>
         <ElDescriptionsItem label="相对起飞点高度">
           {{ snapshotValue(uav.position.altitude, "m") }}
         </ElDescriptionsItem>

@@ -3,12 +3,40 @@ import { defineStore } from "pinia";
 import { createMockUavs } from "../views/uav/mock";
 import { validateUav } from "../views/uav/model";
 import type { Uav, UavInput } from "../views/uav/types";
+import { useTelemetryStore } from "./telemetry";
 
 // 唯一资产来源；只保存可序列化数据，不保存地图实例，不做持久化或网络请求。
 export const useUavStore = defineStore("uav-assets", () => {
   const list = shallowRef<Uav[]>(createMockUavs());
+  const telemetry = useTelemetryStore();
+  telemetry.setAssetIds(list.value.map((uav) => uav.id));
+  const displayList = computed(() =>
+    list.value.map((uav) => {
+      const packet = telemetry.getLatestTelemetry(uav.id);
+      if (!packet) return uav;
+      return {
+        ...uav,
+        status: telemetry.isOffline(uav.id) ? ("offline" as const) : packet.status,
+        position: {
+          longitude: packet.longitude,
+          latitude: packet.latitude,
+          altitude: packet.altitude,
+        },
+        telemetry: {
+          speed: packet.speed,
+          heading: packet.heading,
+          battery: packet.battery,
+          signal: packet.signal,
+        },
+        lastOnlineAt: new Date(packet.timestamp).toISOString(),
+        telemetryUpdatedAt: new Date(packet.timestamp).toISOString(),
+      };
+    })
+  );
   const selectedId = ref<string | null>(null);
-  const selectedUav = computed(() => list.value.find((uav) => uav.id === selectedId.value) ?? null);
+  const selectedUav = computed(
+    () => displayList.value.find((uav) => uav.id === selectedId.value) ?? null
+  );
   const locateRequest = shallowRef<{ id: string; token: number } | null>(null);
   const sessionVersion = ref(0);
   let sequence = 0;
@@ -45,10 +73,20 @@ export const useUavStore = defineStore("uav-assets", () => {
     list.value = previous
       ? list.value.map((item) => (item.id === id ? uav : item))
       : [...list.value, uav];
+    telemetry.setAssetIds(list.value.map((item) => item.id));
+    if (
+      previous &&
+      (previous.status !== uav.status ||
+        previous.position.longitude !== uav.position.longitude ||
+        previous.position.latitude !== uav.position.latitude)
+    )
+      telemetry.remove(uav.id);
     return uav;
   }
   function remove(id: string) {
+    telemetry.remove(id);
     list.value = list.value.filter((uav) => uav.id !== id);
+    telemetry.setAssetIds(list.value.map((item) => item.id));
     if (selectedId.value === id) selectedId.value = null;
     if (locateRequest.value?.id === id) locateRequest.value = null;
   }
@@ -62,13 +100,16 @@ export const useUavStore = defineStore("uav-assets", () => {
     if (locateRequest.value?.token === token) locateRequest.value = null;
   }
   function reset() {
+    telemetry.reset();
     selectedId.value = null;
     locateRequest.value = null;
     list.value = createMockUavs();
+    telemetry.setAssetIds(list.value.map((item) => item.id));
     sessionVersion.value++;
   }
   return {
     list,
+    displayList,
     selectedId,
     selectedUav,
     locateRequest,

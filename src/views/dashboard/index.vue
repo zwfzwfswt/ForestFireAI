@@ -30,7 +30,7 @@ const uavs = useUavStore();
 const stats = computed(() => [
   {
     ...dashboardStats[0],
-    value: uavs.list.filter((uav) => uav.status === "online").length,
+    value: uavs.displayList.filter((uav) => uav.status === "online").length,
     note: `资产总数 ${uavs.list.length} 架 · 仅统计 online 状态（Mock）`,
   },
   ...dashboardStats.slice(1),

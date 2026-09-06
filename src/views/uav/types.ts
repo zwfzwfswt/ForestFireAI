@@ -7,6 +7,8 @@ export interface UavPayload {
   aiBox: boolean;
 }
 export interface Uav {
+  /** Present only in the composed simulator view; asset timestamps stay unchanged. */
+  telemetryUpdatedAt?: string;
   id: string;
   name: string;
   serialNumber: string;

@@ -35,7 +35,7 @@
 
 共 18 个元数据条目；6 个 Mock 数据集加载 7 个要素：行政区面 1、道路线 1、火点 2、高风险面 1、消防站点 1、水源点 1。所有坐标均为 WGS84 GeoJSON `[经度, 纬度]`，面环闭合；名称和属性标记 Mock，不表示真实行政边界、火情或设施。其余条目只作目录设计，无数据、接口、控制或分析逻辑。未来遥感图层可使用 surface 区间注册；无需新增 Registry。
 
-Dashboard 额外通过 `useUavMapLayer` 向现有 UAVLayer 注入八架 Mock 资产，初始共七个已加载业务层、十五个要素。地图不另存 UAV 样例，资产修改通过 `replaceBusiness` 更新原组，保留面板偏好；停用先关闭 Popup 和数据监听，再释放地图。绘制期间 UAV Popup 暂停，点击继续传递给绘制模式。其他未配置目录仍不实例化。
+Dashboard 通过 `useUavMapLayer` 向现有 UAVLayer 注入八架 Mock 资产，并注册初始为空的 UAVTrackLayer。地图不另存 UAV 数据，读取资产与独立遥测的组合视图，按 ID 复用 Marker，通过 `setLatLng` 更新位置；轨迹复用 Polyline，通过 `setLatLngs` 更新，每架最多 300 点。Registry 的 `setFeatureCount` 仅同步数量与空层状态，保留面板偏好。轨迹 pane 为 `ff-business-UAVTrackLayer`，zIndex 520；UAV pane 为 720，清除 Drawing 不影响两者。停用先关闭 Popup 和数据监听，再释放地图；激活后恢复当前有界数据。绘制期间 UAV Popup 暂停，点击继续传递给绘制模式。其他未配置目录仍不实例化。模拟器控制及验证见[无人机模块说明](../../../uav/README.md#uav-simulator--实时遥测-v1)。
 
 ## pane 层级
 

@@ -3,9 +3,11 @@
     <header>
       <h1>无人机管理</h1>
       <p>
-        Mock 资产台账 · {{ store.list.length }} 架 · 全部为静态样例，刷新后恢复。高度相对起飞点。
+        Mock 资产台账 · {{ store.list.length }} 架 ·
+        可启动本地模拟遥测，刷新后恢复。高度相对起飞点。
       </p>
     </header>
+    <UavSimulatorPanel />
     <ElCard shadow="never">
       <ElForm inline :model="query" class="uav-page__search" @submit.prevent="page = 1">
         <ElFormItem label="搜索">
@@ -103,6 +105,7 @@ import { useUavStore } from "../../stores/uav";
 import UavTable from "./components/UavTable.vue";
 import UavForm from "./components/UavForm.vue";
 import UavDetail from "./components/UavDetail.vue";
+import UavSimulatorPanel from "./components/UavSimulatorPanel.vue";
 import { uavStatuses } from "./config";
 import { filterUavs } from "./model";
 import type { Uav, UavQuery } from "./types";
@@ -111,7 +114,7 @@ const store = useUavStore();
 const router = useRouter();
 const query = reactive<UavQuery>({ keyword: "", status: "", model: "" });
 const page = ref(1);
-const filtered = computed(() => filterUavs(store.list, query));
+const filtered = computed(() => filterUavs(store.displayList, query));
 const pageItems = computed(() => filtered.value.slice((page.value - 1) * 10, page.value * 10));
 const models = computed(() => [...new Set(store.list.map((uav) => uav.model))].sort());
 const editing = ref<Uav | null>(null);
@@ -137,7 +140,7 @@ function resetQuery() {
   Object.assign(query, { keyword: "", status: "", model: "" });
 }
 function edit(uav?: Uav) {
-  editing.value = uav ?? null;
+  editing.value = store.list.find((item) => item.id === uav?.id) ?? null;
   formOpen.value = true;
 }
 function detail(uav: Uav) {

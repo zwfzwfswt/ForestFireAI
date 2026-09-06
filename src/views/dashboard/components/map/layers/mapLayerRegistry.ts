@@ -130,6 +130,15 @@ export function createMapLayerRegistry(
   return {
     register,
     registerBusiness,
+    setFeatureCount(id: string, count: number) {
+      const state = business(id);
+      if (!groups.has(id) || !Number.isInteger(count) || count < 0)
+        throw new Error("要素数量无效或图层未加载");
+      if (state.featureCount === count) return;
+      state.featureCount = count;
+      state.status = count ? "ready" : "empty";
+      publish();
+    },
     replaceBusiness(id: string, factory: LayerFactory) {
       const state = business(id);
       const group = groups.get(id);
