@@ -13,7 +13,7 @@
     </header>
     <DashboardStats :items="dashboardStats" />
     <div class="command-center__main">
-      <DashboardMapPlaceholder />
+      <ForestFireMap />
       <DashboardAlerts :alerts="dashboardAlerts" />
     </div>
   </div>
@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import DashboardStats from "./components/DashboardStats.vue";
-import DashboardMapPlaceholder from "./components/DashboardMapPlaceholder.vue";
+import ForestFireMap from "./components/map/ForestFireMap.vue";
 import DashboardAlerts from "./components/DashboardAlerts.vue";
 import { dashboardAlerts, dashboardSnapshot, dashboardStats } from "./mock";
 defineOptions({ name: "Dashboard", inheritAttrs: false });
