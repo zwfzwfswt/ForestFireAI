@@ -262,6 +262,15 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
   globalThis.__dashboardLeafletTest = {
     marker: () => ({
       options: {},
+      setLatLng() {
+        return this;
+      },
+      setLatLngs() {
+        return this;
+      },
+      setStyle() {
+        return this;
+      },
       getElement() {},
       addTo() {
         return this;
@@ -286,6 +295,9 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
     geoJSON: () => ({}),
     map: () => map,
     layerGroup: () => ({
+      getLayers() {
+        return [];
+      },
       addTo() {
         return this;
       },
@@ -324,6 +336,7 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
     nextSibling: () => null,
     patchProp() {},
   });
+  globalThis.__dashboardLeafletTest.polygon = globalThis.__dashboardLeafletTest.marker;
   let state;
   const { useForestMap } = await import(moduleUrl(resolve(root, "components/map/useForestMap.ts")));
   const app = renderer.createApp({

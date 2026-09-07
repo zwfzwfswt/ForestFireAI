@@ -13,6 +13,9 @@ import { cleanupSseServices } from "@/composables";
 import { useUavStore } from "./uav";
 import { useFireEventStore } from "./fireEvent";
 import { useFireAlertStore } from "./fireAlert";
+import { useRemoteSensingStore } from "./remoteSensing";
+import { useSatelliteHotspotStore } from "./satelliteHotspot";
+import { useFireRiskStore } from "./fireRisk";
 
 export const useUserStore = defineStore("user", () => {
   // 用户信息
@@ -101,6 +104,9 @@ export const useUserStore = defineStore("user", () => {
     useUavStore(store).reset();
     useFireEventStore(store).reset();
     useFireAlertStore(store).reset();
+    useRemoteSensingStore(store).reset();
+    useSatelliteHotspotStore(store).reset();
+    useFireRiskStore(store).reset();
     AuthStorage.clearAuth();
     userInfo.value = {} as UserInfo;
   }

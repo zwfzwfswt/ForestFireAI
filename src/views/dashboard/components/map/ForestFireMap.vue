@@ -42,6 +42,7 @@
       <p v-else-if="!visible" class="forest-map__message">底图已隐藏，可在图层控制中重新显示。</p>
     </div>
     <MapCoordinateDisplay :coordinate="coordinate" :zoom="zoom" />
+    <MapLegend :layers="businessStates" :errors="rasterErrors" />
     <UavMapSelection />
     <FireMapSelection />
     <AlertMapSelection />
@@ -60,6 +61,7 @@ import MapFullscreenControl from "./MapFullscreenControl.vue";
 import MapLayerControl from "./MapLayerControl.vue";
 import MapToolbar from "./MapToolbar.vue";
 import MapBusinessLayerPanel from "./MapBusinessLayerPanel.vue";
+import MapLegend from "./MapLegend.vue";
 import { useForestMap } from "./useForestMap";
 import UavMapSelection from "../../../uav/components/UavMapSelection.vue";
 import FireMapSelection from "../../../fire/components/FireMapSelection.vue";
@@ -67,8 +69,19 @@ import AlertMapSelection from "../../../fire/alerts/components/AlertMapSelection
 import UavSimulatorPanel from "../../../uav/components/UavSimulatorPanel.vue";
 const shell = ref<HTMLElement | null>(null);
 const container = ref<HTMLElement | null>(null);
-const { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView, business } =
-  useForestMap(container);
+const {
+  coordinate,
+  zoom,
+  selected,
+  visible,
+  error,
+  ready,
+  retry,
+  drawing,
+  resetView,
+  business,
+  rasterErrors,
+} = useForestMap(container);
 const { states: businessStates } = business;
 const { mode, status, count, visible: drawingVisible, canFinish } = drawing;
 </script>

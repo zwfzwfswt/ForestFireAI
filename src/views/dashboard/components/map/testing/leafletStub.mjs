@@ -22,6 +22,20 @@ export function createLeafletStub() {
       this.options.icon = icon;
       return this;
     }
+    setOpacity(value) {
+      this.options.opacity = value;
+      return this;
+    }
+    setStyle(value) {
+      Object.assign(this.options, value);
+      return this;
+    }
+    bringToFront() {
+      return this;
+    }
+    getBounds() {
+      return this.coordinates;
+    }
     getElement() {
       return undefined;
     }
@@ -114,6 +128,7 @@ export function createLeafletStub() {
     polygon: (p, o) => new Layer("polygon", p, o),
     tooltip: (o) => new Layer("tooltip", undefined, o),
     tileLayer: (url) => new Layer("tile", url),
+    imageOverlay: (url, bounds, options) => new Layer("image", { url, bounds }, options),
     DomEvent: { stop() {} },
     control: { zoom: () => ({ addTo() {} }), scale: () => ({ addTo() {} }) },
     map(container, options = { center: [30, 119], zoom: 9 }) {
@@ -200,6 +215,10 @@ export function createLeafletStub() {
         },
         flyTo(center, zoom) {
           return this.setView(center, zoom);
+        },
+        fitBounds(bounds) {
+          this.bounds = bounds;
+          return this;
         },
         invalidateSize() {},
         remove() {

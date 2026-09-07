@@ -67,6 +67,8 @@ export const layerDefinitions: readonly LayerDefinition[] = [
   define("AIAlertLayer", "AI 告警", "monitoring", "marker", "interaction", 820, "alert"),
   define("FireAlertLayer", "统一告警", "monitoring", "marker", "interaction", 810, "alert"),
   define("HistoricalFireLayer", "历史火点", "monitoring", "marker", "fire", 610, "history"),
+  define("SatelliteHotspotLayer", "卫星火点", "monitoring", "marker", "fire", 600, "hotspot"),
+  define("RemoteSensingLayer", "遥感产品", "forest", "raster", "surface", 300, "raster"),
   define("UAVLayer", "UAV", "uav", "marker", "uav", 720, "uav"),
   define("UAVTrackLayer", "UAV 飞行轨迹", "uav", "polyline", "track", 520, "track"),
   define("MissionLayer", "UAV 任务区域", "uav", "polygon", "mission", 470, "mission"),

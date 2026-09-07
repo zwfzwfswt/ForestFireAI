@@ -7,6 +7,9 @@ import { AuthStorage } from "@/utils/auth";
 import { useUavStore } from "./uav";
 import { useFireEventStore } from "./fireEvent";
 import { useFireAlertStore } from "./fireAlert";
+import { useRemoteSensingStore } from "./remoteSensing";
+import { useSatelliteHotspotStore } from "./satelliteHotspot";
+import { useFireRiskStore } from "./fireRisk";
 
 /**
  * 租户 Store
@@ -114,6 +117,9 @@ export const useTenantStore = defineStore("tenant", () => {
     if (currentTenantId.value !== tenant.id) useUavStore(store).reset();
     if (currentTenantId.value !== tenant.id) useFireEventStore(store).reset();
     if (currentTenantId.value !== tenant.id) useFireAlertStore(store).reset();
+    if (currentTenantId.value !== tenant.id) useRemoteSensingStore(store).reset();
+    if (currentTenantId.value !== tenant.id) useSatelliteHotspotStore(store).reset();
+    if (currentTenantId.value !== tenant.id) useFireRiskStore(store).reset();
     currentTenantId.value = tenant.id;
     currentTenant.value = tenant;
 
@@ -158,6 +164,9 @@ export const useTenantStore = defineStore("tenant", () => {
     useUavStore(store).reset();
     useFireEventStore(store).reset();
     useFireAlertStore(store).reset();
+    useRemoteSensingStore(store).reset();
+    useSatelliteHotspotStore(store).reset();
+    useFireRiskStore(store).reset();
     currentTenantId.value = null;
     currentTenant.value = null;
     tenantList.value = [];

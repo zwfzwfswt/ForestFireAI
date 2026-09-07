@@ -12,6 +12,7 @@ import { useUavMapLayer } from "./composables/useUavMapLayer";
 import { useAlertMapLayer } from "./composables/useAlertMapLayer";
 import { useFireMapLayer } from "./composables/useFireMapLayer";
 import type { GeoPoint } from "./utils/geometry";
+import { useRemoteSensingLayers } from "./composables/useRemoteSensingLayers";
 
 export function useForestMap(
   container: Ref<HTMLElement | null>,
@@ -28,6 +29,7 @@ export function useForestMap(
   const uav = useUavMapLayer(() => drawing.mode.value !== null);
   const fire = useFireMapLayer(() => drawing.mode.value !== null);
   const alerts = useAlertMapLayer(() => drawing.mode.value !== null);
+  const remote = useRemoteSensingLayers(() => drawing.mode.value !== null);
   let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
@@ -41,6 +43,7 @@ export function useForestMap(
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    remote.detach();
     alerts.detach();
     fire.detach();
     uav.detach();
@@ -86,6 +89,9 @@ export function useForestMap(
           UAVTrackLayer: uav.trackFactory(L),
           FireEventLayer: fire.factory(L),
           FireAlertLayer: alerts.factory(L),
+          RemoteSensingLayer: remote.factory(L, "RemoteSensingLayer"),
+          FireRiskLayer: remote.factory(L, "FireRiskLayer"),
+          SatelliteHotspotLayer: remote.factory(L, "SatelliteHotspotLayer"),
         });
         drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
@@ -126,6 +132,7 @@ export function useForestMap(
         uav.attach(map, L, layers);
         fire.attach(map, L, layers);
         alerts.attach(map, L, layers);
+        remote.attach(map, L, layers);
         resize();
         return map;
       } catch (cause) {
@@ -155,5 +162,17 @@ export function useForestMap(
   onActivated(start);
   onDeactivated(() => session.stop());
   onBeforeUnmount(() => session.stop());
-  return { coordinate, zoom, selected, visible, error, ready, retry, drawing, resetView, business };
+  return {
+    coordinate,
+    zoom,
+    selected,
+    visible,
+    error,
+    ready,
+    retry,
+    drawing,
+    resetView,
+    business,
+    rasterErrors: remote.errors,
+  };
 }

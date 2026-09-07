@@ -21,5 +21,5 @@ export const dashboardStats: DashboardStat[] = [
     unit: "条",
     note: "会话内 AI 来源样例 · 含已处理",
   },
-  { label: "高风险区域", value: 2, unit: "处", note: "演示风险分区 · 非实际评估" },
+  { label: "高风险区域", value: 0, unit: "处", note: "由 FireRisk Store 统计 · Mock" },
 ];

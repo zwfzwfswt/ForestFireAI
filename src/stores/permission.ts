@@ -8,6 +8,7 @@ import { isExternal } from "@/utils";
 import MenuAPI from "@/api/system/menu";
 import { withUavMockMenu } from "../views/uav/mockMenu";
 import { withFireMockMenu } from "../views/fire/mockMenu";
+import { withRemoteSensingMockMenu } from "../views/remote-sensing/mockMenu";
 import type { RouteItem } from "@/api/system/menu";
 const modules = import.meta.glob("../views/**/*.vue");
 const Layout = () => import("../layouts/index.vue");
@@ -23,7 +24,9 @@ export const usePermissionStore = defineStore("permission", () => {
   async function generateRoutes(): Promise<RouteRecordRaw[]> {
     try {
       const routeData = await MenuAPI.getRoutes();
-      const menuRoutes = transformRoutes(withFireMockMenu(withUavMockMenu(routeData)));
+      const menuRoutes = transformRoutes(
+        withRemoteSensingMockMenu(withFireMockMenu(withUavMockMenu(routeData)))
+      );
       const registerRoutes = filterRoutes(menuRoutes);
 
       routes.value = [...constantRoutes, ...menuRoutes];

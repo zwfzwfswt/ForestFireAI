@@ -27,6 +27,8 @@ import { dashboardSnapshot, dashboardStats } from "./mock";
 import { computed } from "vue";
 import { useUavStore } from "../../stores/uav";
 import { useFireAlertStore } from "../../stores/fireAlert";
+import { useFireRiskStore } from "../../stores/fireRisk";
+const risks = useFireRiskStore();
 const uavs = useUavStore();
 const alerts = useFireAlertStore();
 const stats = computed(() => [
@@ -38,7 +40,11 @@ const stats = computed(() => [
   dashboardStats[1],
   { ...dashboardStats[2], value: alerts.pendingAlerts.length },
   { ...dashboardStats[3], value: alerts.alerts.filter((alert) => alert.source === "ai").length },
-  dashboardStats[4],
+  {
+    ...dashboardStats[4],
+    value: risks.highRiskCount,
+    note: "high / very_high / extreme 分区 · Mock",
+  },
 ]);
 defineOptions({ name: "Dashboard", inheritAttrs: false });
 </script>

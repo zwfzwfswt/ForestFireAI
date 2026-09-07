@@ -13,6 +13,7 @@ export type MapLayerId =
   | "FireEventLayer"
   | "FireAlertLayer"
   | "RemoteSensingLayer"
+  | "SatelliteHotspotLayer"
   | "FireRiskLayer"
   | "ResourceLayer";
 
