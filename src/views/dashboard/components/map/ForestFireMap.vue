@@ -43,6 +43,7 @@
     </div>
     <MapCoordinateDisplay :coordinate="coordinate" :zoom="zoom" />
     <UavMapSelection />
+    <FireMapSelection />
     <UavSimulatorPanel />
     <small class="forest-map__note">
       在线底图 · 非实时影像；空间图层、业务统计与告警均为
@@ -60,6 +61,7 @@ import MapToolbar from "./MapToolbar.vue";
 import MapBusinessLayerPanel from "./MapBusinessLayerPanel.vue";
 import { useForestMap } from "./useForestMap";
 import UavMapSelection from "../../../uav/components/UavMapSelection.vue";
+import FireMapSelection from "../../../fire/components/FireMapSelection.vue";
 import UavSimulatorPanel from "../../../uav/components/UavSimulatorPanel.vue";
 const shell = ref<HTMLElement | null>(null);
 const container = ref<HTMLElement | null>(null);

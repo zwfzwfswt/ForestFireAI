@@ -17,7 +17,7 @@ const prompts: Record<DrawingMode, string> = {
   area: "点击地图开始测面积",
 };
 
-export function useMapDrawing() {
+export function useMapDrawing(onPoint?: (point: GeoPoint) => void) {
   const mode = ref<DrawingMode | null>(null);
   const status = ref("选择工具开始绘制或测量");
   const count = ref(0);
@@ -172,10 +172,13 @@ export function useMapDrawing() {
       .setLatLng([anchor.lat, anchor.lng])
       .setContent(result)
       .addTo(draft);
+    const completedPoint =
+      mode.value === "point" ? { lat: anchor.lat, lng: wrapLongitude(anchor.lng) } : undefined;
     draft = undefined;
     count.value++;
     exit();
     status.value = `已完成 · ${result}`;
+    if (completedPoint) onPoint?.(completedPoint);
   }
   function clear() {
     cancel();

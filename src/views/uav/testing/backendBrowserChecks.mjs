@@ -89,7 +89,11 @@ export async function runBackendBrowserChecks({
   state().business.setVisible("UAVTrackLayer", true);
   state().drawing.clear();
   check(tracks().length === fleetSize, "清除绘制影响轨迹");
-  check(document.querySelectorAll(".ff-business-symbol").length === 4, "业务火点/资源丢失");
+  check(
+    document.querySelectorAll(".ff-business-symbol").length === 2 &&
+      document.querySelectorAll(".ff-fire-symbol").length === 10,
+    "业务火点/资源丢失"
+  );
   await router.push("/uav/list");
   await nextTick();
   await waitFor(() => document.querySelector(".uav-page"));

@@ -221,6 +221,8 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
   };
   globalThis.__dashboardLeafletTest = {
     marker: () => ({
+      options: {},
+      getElement() {},
       addTo() {
         return this;
       },

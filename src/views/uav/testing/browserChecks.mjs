@@ -220,7 +220,8 @@ export async function runUavBrowserChecks({ store, router, nextTick }) {
     await waitFor(() => mapState()?.ready && markers().length === 8);
     check(!markers().some((item) => item.title.includes("编辑后的测试机")), "删除后 Marker 残留");
     check(
-      document.querySelectorAll(".ff-business-symbol").length === 4 &&
+      document.querySelectorAll(".ff-business-symbol").length === 2 &&
+        document.querySelectorAll(".ff-fire-symbol").length === 10 &&
         document.querySelector(".leaflet-ff-business-HighRiskLayer-pane path"),
       "CRUD 破坏其他业务层"
     );

@@ -9,17 +9,23 @@ import { useMapDrawing } from "./composables/useMapDrawing";
 import { useBusinessLayers } from "./composables/useBusinessLayers";
 import { registerDrawingPanes } from "./layers/layerPanes";
 import { useUavMapLayer } from "./composables/useUavMapLayer";
+import { useFireMapLayer } from "./composables/useFireMapLayer";
+import type { GeoPoint } from "./utils/geometry";
 
-export function useForestMap(container: Ref<HTMLElement | null>) {
+export function useForestMap(
+  container: Ref<HTMLElement | null>,
+  onPoint?: (point: GeoPoint) => void
+) {
   const coordinate = ref<{ lat: number; lng: number } | null>(null);
   const zoom = ref(mapConfig.zoom);
   const selected = ref(mapConfig.defaultBaseLayer);
   const visible = ref(true);
   const error = ref("");
   const ready = ref(false);
-  const drawing = useMapDrawing();
+  const drawing = useMapDrawing(onPoint);
   const business = useBusinessLayers();
   const uav = useUavMapLayer(() => drawing.mode.value !== null);
+  const fire = useFireMapLayer(() => drawing.mode.value !== null);
   let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
@@ -33,6 +39,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    fire.detach();
     uav.detach();
     business.detach();
     drawing.detach();
@@ -74,6 +81,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
         business.attach(layers, L, {
           UAVLayer: uav.factory(L),
           UAVTrackLayer: uav.trackFactory(L),
+          FireEventLayer: fire.factory(L),
         });
         drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
@@ -112,6 +120,7 @@ export function useForestMap(container: Ref<HTMLElement | null>) {
         observer.observe(container.value);
         ready.value = true;
         uav.attach(map, L, layers);
+        fire.attach(map, L, layers);
         resize();
         return map;
       } catch (cause) {

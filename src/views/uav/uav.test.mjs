@@ -329,7 +329,7 @@ test("本地菜单沿用 RouteItem，重复生成无重复项，冲突时保留�
   const remote = [{ path: "/uav", children: [] }];
   assert.equal(withUavMockMenu(remote), remote);
   const permission = readFileSync(resolve(root, "../../stores/permission.ts"), "utf8");
-  assert.match(permission, /transformRoutes\(withUavMockMenu\(routeData\)\)/);
+  assert.match(permission, /transformRoutes\(withFireMockMenu\(withUavMockMenu\(routeData\)\)\)/);
   for (const file of ["user", "tenant"])
     assert.match(
       readFileSync(resolve(root, `../../stores/${file}.ts`), "utf8"),

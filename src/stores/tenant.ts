@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from "@/constants";
 import AuthAPI from "@/api/auth";
 import { AuthStorage } from "@/utils/auth";
 import { useUavStore } from "./uav";
+import { useFireEventStore } from "./fireEvent";
 
 /**
  * 租户 Store
@@ -110,6 +111,7 @@ export const useTenantStore = defineStore("tenant", () => {
    */
   function setCurrentTenant(tenant: TenantInfo) {
     if (currentTenantId.value !== tenant.id) useUavStore(store).reset();
+    if (currentTenantId.value !== tenant.id) useFireEventStore(store).reset();
     currentTenantId.value = tenant.id;
     currentTenant.value = tenant;
 
@@ -152,6 +154,7 @@ export const useTenantStore = defineStore("tenant", () => {
    */
   function clearTenant() {
     useUavStore(store).reset();
+    useFireEventStore(store).reset();
     currentTenantId.value = null;
     currentTenant.value = null;
     tenantList.value = [];

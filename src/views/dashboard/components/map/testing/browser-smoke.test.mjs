@@ -63,7 +63,7 @@ async function browserChecks() {
     const pane = (id) => document.querySelector(`.leaflet-${businessState(id).pane}-pane`);
     check(state().businessStates.length === 18, "业务图层注册数量错误");
     check(
-      pane("FireEventLayer").querySelectorAll(".ff-business-symbol").length === 2,
+      pane("FireEventLayer").querySelectorAll(".ff-fire-symbol").length === 10,
       "两个 Mock 火点未加载"
     );
     check(
@@ -100,13 +100,13 @@ async function browserChecks() {
     await nextTick();
     check(
       !businessState("FireEventLayer").visible &&
-        !pane("FireEventLayer").querySelector(".ff-business-symbol"),
+        !pane("FireEventLayer").querySelector(".ff-fire-symbol"),
       "面板隐藏火情失败"
     );
     fireCheckbox.click();
     await nextTick();
     check(
-      pane("FireEventLayer").querySelectorAll(".ff-business-symbol").length === 2,
+      pane("FireEventLayer").querySelectorAll(".ff-fire-symbol").length === 10,
       "面板显示火情失败"
     );
     const slider = panel.querySelector('[data-layer-id="RoadLayer"] input[type="range"]');
@@ -180,7 +180,7 @@ async function browserChecks() {
     );
     check(document.querySelector(".leaflet-tile-pane").childElementCount === tiles, "清除误删底图");
     check(
-      document.querySelectorAll(".ff-business-symbol").length === symbols && symbols === 4,
+      document.querySelectorAll(".ff-business-symbol").length === symbols && symbols === 2,
       "清除误删业务标记"
     );
     check(
@@ -206,7 +206,11 @@ async function browserChecks() {
       "重建未恢复透明度"
     );
     check(pane("WaterSourceLayer").style.zIndex === "570", "重建未恢复层级");
-    check(document.querySelectorAll(".ff-business-symbol").length === 4, "重建业务图层缺失或重复");
+    check(
+      document.querySelectorAll(".ff-business-symbol").length === 2 &&
+        document.querySelectorAll(".ff-fire-symbol").length === 10,
+      "重建业务图层缺失或重复"
+    );
     check(state().mode === null && state().count === 0, "重新激活残留工具/结果");
     await button("绘制点");
     await mouse("click", 140, 120);
@@ -259,6 +263,9 @@ test(
       import { createPinia } from 'pinia';
       import { createRouter, createMemoryHistory } from 'vue-router';
       import UavPage from '/src/views/uav/index.vue';
+      import FirePage from '/src/views/fire/index.vue';
+      import { useFireEventStore } from '/src/stores/fireEvent.ts';
+      import { runFireBrowserChecks } from '/src/views/fire/testing/browserChecks.mjs';
       import { useUavStore } from '/src/stores/uav.ts';
       import { runUavBrowserChecks } from '/src/views/uav/testing/browserChecks.mjs';
       import ForestFireMap from '/src/views/dashboard/components/map/ForestFireMap.vue';
@@ -268,16 +275,20 @@ test(
       // 本地透明瓦片避免外部请求；只影响本测试浏览器内的模块实例。
       baseLayers.forEach(layer => layer.url = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
       const pinia = createPinia(); const store = useUavStore(pinia);
-      const router = createRouter({ history: createMemoryHistory(), routes: [ { path: '/dashboard', component: ForestFireMap }, { path: '/uav/list', component: UavPage } ] });
+      const router = createRouter({ history: createMemoryHistory(), routes: [ { path: '/dashboard', component: ForestFireMap }, { path: '/uav/list', component: UavPage }, { path: '/fire/events', component: FirePage } ] });
       await router.push('/dashboard');
       const active = ref(true); const view = ref('/dashboard');
       router.afterEach(to => { view.value = to.path; });
       window.gisHarness = { active, nextTick };
-      createApp({ setup: () => () => h(KeepAlive, null, { default: () => active.value ? h(view.value === '/dashboard' ? ForestFireMap : UavPage) : null }) }).use(pinia).use(router).mount('#app');
+      createApp({ setup: () => () => h(KeepAlive, null, { default: () => active.value ? h(view.value === '/dashboard' ? ForestFireMap : view.value === '/fire/events' ? FirePage : UavPage) : null }) }).use(pinia).use(router).mount('#app');
       const result = await (${browserChecks.toString()})();
       if (!result.error) {
         const uav = await runUavBrowserChecks({ store, router, nextTick });
         result.passed.push(...uav.passed); result.error = uav.error; result.buttons = uav.buttons;
+      }
+      if (!result.error) {
+        const fire = await runFireBrowserChecks({ store: useFireEventStore(pinia), router, nextTick });
+        result.passed.push(...fire.passed); result.error = fire.error;
       }
       const output = document.createElement('pre'); output.id = 'gis-test-result'; output.textContent = JSON.stringify(result); document.body.append(output);
       </script></body></html>`;
@@ -322,7 +333,7 @@ test(
       assert.ok(match, "浏览器未输出测试结果，请检查浏览器/Vite 运行环境");
       const result = JSON.parse(match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
       assert.equal(result.error, undefined, JSON.stringify(result));
-      assert.equal(result.passed.length, 19);
+      assert.equal(result.passed.length, 24);
     } finally {
       child?.kill();
       await server.close();

@@ -39,6 +39,8 @@ Dashboard 通过 `useUavMapLayer` 向现有 UAVLayer 注入八架 Mock 资产，
 
 ## pane 层级
 
+Fire Event V1 在 Dashboard 中通过 `useFireMapLayer` 注入 FireEventLayer 工厂，从 [火情事件 Store](../../../fire/README.md) 加载十条事件并响应编辑/状态变化；原 GeoJSON 文件中的两个火点仅保留为基础图层测试样例，不与 Store 标记重复加载。火情 Popup 和选中详情复用同一 Store；点选表单复用 `useMapDrawing` 的可选完成回调。FireEventLayer 包含已关闭事件，图标按状态和等级区分。
+
 | 空间层级                          | zIndex 范围 |
 | --------------------------------- | ----------- |
 | 底图 tilePane                     | 200         |
