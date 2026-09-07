@@ -65,6 +65,7 @@ export const layerDefinitions: readonly LayerDefinition[] = [
   define("VegetationLayer", "植被类型", "forest", "geojson", "boundary", 375, "forest"),
   define("FireEventLayer", "当前火情", "monitoring", "marker", "fire", 620, "fire", true),
   define("AIAlertLayer", "AI 告警", "monitoring", "marker", "interaction", 820, "alert"),
+  define("FireAlertLayer", "统一告警", "monitoring", "marker", "interaction", 810, "alert"),
   define("HistoricalFireLayer", "历史火点", "monitoring", "marker", "fire", 610, "history"),
   define("UAVLayer", "UAV", "uav", "marker", "uav", 720, "uav"),
   define("UAVTrackLayer", "UAV 飞行轨迹", "uav", "polyline", "track", 520, "track"),

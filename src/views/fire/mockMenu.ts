@@ -6,7 +6,7 @@ export function withFireMockMenu(routes: RouteItem[]): RouteItem[] {
       (item) =>
         item.path === "/fire" ||
         item.path?.startsWith("/fire/") ||
-        ["FireMockRoot", "FireEvents"].includes(item.name ?? "") ||
+        ["FireMockRoot", "FireEvents", "FireAlerts"].includes(item.name ?? "") ||
         conflicts(item.children ?? [])
     );
   if (conflicts(routes)) return routes;
@@ -24,6 +24,13 @@ export function withFireMockMenu(routes: RouteItem[]): RouteItem[] {
           name: "FireEvents",
           component: "fire/index",
           meta: { title: "火情事件", icon: "el-icon-Warning", keepAlive: true },
+          children: [],
+        },
+        {
+          path: "alerts",
+          name: "FireAlerts",
+          component: "fire/alerts/index",
+          meta: { title: "告警中心", icon: "el-icon-Bell", keepAlive: true },
           children: [],
         },
       ],

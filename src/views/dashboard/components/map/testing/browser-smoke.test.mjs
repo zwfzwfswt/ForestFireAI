@@ -61,7 +61,7 @@ async function browserChecks() {
     await waitFor(() => document.querySelector(".forest-map") && state().ready);
     const businessState = (id) => state().businessStates.find((layer) => layer.id === id);
     const pane = (id) => document.querySelector(`.leaflet-${businessState(id).pane}-pane`);
-    check(state().businessStates.length === 18, "业务图层注册数量错误");
+    check(state().businessStates.length === 19, "业务图层注册数量错误");
     check(
       pane("FireEventLayer").querySelectorAll(".ff-fire-symbol").length === 10,
       "两个 Mock 火点未加载"
@@ -264,6 +264,10 @@ test(
       import { createRouter, createMemoryHistory } from 'vue-router';
       import UavPage from '/src/views/uav/index.vue';
       import FirePage from '/src/views/fire/index.vue';
+      import AlertPage from '/src/views/fire/alerts/index.vue';
+      import DashboardPage from '/src/views/dashboard/index.vue';
+      import { useFireAlertStore } from '/src/stores/fireAlert.ts';
+      import { runAlertBrowserChecks } from '/src/views/fire/alerts/testing/browserChecks.mjs';
       import { useFireEventStore } from '/src/stores/fireEvent.ts';
       import { runFireBrowserChecks } from '/src/views/fire/testing/browserChecks.mjs';
       import { useUavStore } from '/src/stores/uav.ts';
@@ -275,12 +279,12 @@ test(
       // 本地透明瓦片避免外部请求；只影响本测试浏览器内的模块实例。
       baseLayers.forEach(layer => layer.url = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
       const pinia = createPinia(); const store = useUavStore(pinia);
-      const router = createRouter({ history: createMemoryHistory(), routes: [ { path: '/dashboard', component: ForestFireMap }, { path: '/uav/list', component: UavPage }, { path: '/fire/events', component: FirePage } ] });
+      const router = createRouter({ history: createMemoryHistory(), routes: [ { path: '/dashboard', component: ForestFireMap }, { path: '/uav/list', component: UavPage }, { path: '/fire/events', component: FirePage }, { path: '/fire/alerts', component: AlertPage } ] });
       await router.push('/dashboard');
       const active = ref(true); const view = ref('/dashboard');
       router.afterEach(to => { view.value = to.path; });
       window.gisHarness = { active, nextTick };
-      createApp({ setup: () => () => h(KeepAlive, null, { default: () => active.value ? h(view.value === '/dashboard' ? ForestFireMap : view.value === '/fire/events' ? FirePage : UavPage) : null }) }).use(pinia).use(router).mount('#app');
+      createApp({ setup: () => () => h(KeepAlive, null, { default: () => active.value ? h(view.value === '/dashboard' ? DashboardPage : view.value === '/fire/events' ? FirePage : view.value === '/fire/alerts' ? AlertPage : UavPage) : null }) }).use(pinia).use(router).mount('#app');
       const result = await (${browserChecks.toString()})();
       if (!result.error) {
         const uav = await runUavBrowserChecks({ store, router, nextTick });
@@ -290,6 +294,7 @@ test(
         const fire = await runFireBrowserChecks({ store: useFireEventStore(pinia), router, nextTick });
         result.passed.push(...fire.passed); result.error = fire.error;
       }
+      if (!result.error) { const alerts = await runAlertBrowserChecks({ store: useFireAlertStore(pinia), events: useFireEventStore(pinia), router, nextTick }); result.passed.push(...alerts.passed); result.error = alerts.error; }
       const output = document.createElement('pre'); output.id = 'gis-test-result'; output.textContent = JSON.stringify(result); document.body.append(output);
       </script></body></html>`;
         res.setHeader("Content-Type", "text/html");
@@ -309,7 +314,7 @@ test(
             `--user-data-dir=${profile}`,
             "--window-size=1366,900",
             "--dump-dom",
-            "--virtual-time-budget=15000",
+            "--virtual-time-budget=20000",
             `http://127.0.0.1:${port}/__gis_test__.html`,
           ],
           { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
@@ -333,7 +338,7 @@ test(
       assert.ok(match, "浏览器未输出测试结果，请检查浏览器/Vite 运行环境");
       const result = JSON.parse(match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
       assert.equal(result.error, undefined, JSON.stringify(result));
-      assert.equal(result.passed.length, 24);
+      assert.equal(result.passed.length, 29);
     } finally {
       child?.kill();
       await server.close();

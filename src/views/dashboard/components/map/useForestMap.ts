@@ -9,6 +9,7 @@ import { useMapDrawing } from "./composables/useMapDrawing";
 import { useBusinessLayers } from "./composables/useBusinessLayers";
 import { registerDrawingPanes } from "./layers/layerPanes";
 import { useUavMapLayer } from "./composables/useUavMapLayer";
+import { useAlertMapLayer } from "./composables/useAlertMapLayer";
 import { useFireMapLayer } from "./composables/useFireMapLayer";
 import type { GeoPoint } from "./utils/geometry";
 
@@ -26,6 +27,7 @@ export function useForestMap(
   const business = useBusinessLayers();
   const uav = useUavMapLayer(() => drawing.mode.value !== null);
   const fire = useFireMapLayer(() => drawing.mode.value !== null);
+  const alerts = useAlertMapLayer(() => drawing.mode.value !== null);
   let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
@@ -39,6 +41,7 @@ export function useForestMap(
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    alerts.detach();
     fire.detach();
     uav.detach();
     business.detach();
@@ -82,6 +85,7 @@ export function useForestMap(
           UAVLayer: uav.factory(L),
           UAVTrackLayer: uav.trackFactory(L),
           FireEventLayer: fire.factory(L),
+          FireAlertLayer: alerts.factory(L),
         });
         drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
@@ -121,6 +125,7 @@ export function useForestMap(
         ready.value = true;
         uav.attach(map, L, layers);
         fire.attach(map, L, layers);
+        alerts.attach(map, L, layers);
         resize();
         return map;
       } catch (cause) {

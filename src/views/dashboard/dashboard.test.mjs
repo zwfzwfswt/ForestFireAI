@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { createPinia } from "pinia";
+import { createRouter, createMemoryHistory } from "vue-router";
 import { ID_INJECTION_KEY, ZINDEX_INJECTION_KEY } from "element-plus";
 import { createSSRApp, createRenderer, ref, nextTick } from "vue";
 import { renderToString } from "vue/server-renderer";
@@ -45,34 +46,73 @@ function moduleUrl(file) {
   cache.set(file, url);
   return url;
 }
-async function render(file, props = {}) {
+async function render(file, props = {}, pinia = createPinia()) {
   const { default: component } = await import(moduleUrl(resolve(root, file)));
+  const router = createRouter({ history: createMemoryHistory(), routes: [] });
   return renderToString(
     createSSRApp(component, props)
-      .use(createPinia())
+      .use(pinia)
+      .use(router)
       .provide(ID_INJECTION_KEY, { prefix: 100, current: 0 })
       .provide(ZINDEX_INJECTION_KEY, { current: 0 })
   );
 }
-const { dashboardAlerts, dashboardStats } = await import(moduleUrl(resolve(root, "mock.ts")));
+const { dashboardStats } = await import(moduleUrl(resolve(root, "mock.ts")));
+const { useFireAlertStore } = await import(moduleUrl(resolve(root, "../../stores/fireAlert.ts")));
+
+test("Dashboard 使用同一 Alert Store，仅展示最新待处理信号，空值置信度为 --", async () => {
+  const pinia = createPinia();
+  const store = useFireAlertStore(pinia);
+  const html = await render("components/DashboardAlerts.vue", {}, pinia);
+  assert.equal((html.match(/class="alert-card"/g) ?? []).length, 5);
+  for (const alert of store.dashboardAlerts) assert.ok(html.includes(alert.code));
+  for (const alert of store.alerts.filter((alert) =>
+    ["confirmed", "rejected", "duplicate"].includes(alert.status)
+  ))
+    assert.ok(!html.includes(alert.code));
+  assert.match(html, /--/);
+  const first = store.dashboardAlerts[0];
+  store.confirmAlert(first.id, "已核实");
+  const next = await render("components/DashboardAlerts.vue", {}, pinia);
+  assert.ok(!next.includes(first.code));
+  assert.equal((next.match(/class="alert-card"/g) ?? []).length, 5);
+});
+test("待处理告警清空后显示空状态", async () => {
+  const pinia = createPinia();
+  const store = useFireAlertStore(pinia);
+  for (const alert of [...store.pendingAlerts]) {
+    if (alert.status === "new") store.startReview(alert.id);
+    store.rejectAlert(alert.id, "测试误报");
+  }
+  const html = await render("components/DashboardAlerts.vue", {}, pinia);
+  assert.match(html, /暂无待处理告警/);
+  assert.doesNotMatch(html, /class="alert-card"/);
+});
+test("告警外部文字转义，不作为 HTML 执行", async () => {
+  const pinia = createPinia();
+  const store = useFireAlertStore(pinia);
+  store.createAlert({
+    ...store.alerts[0],
+    title: '<img src=x onerror="alert(1)">',
+    detectedAt: new Date().toISOString(),
+  });
+  const html = await render("components/DashboardAlerts.vue", {}, pinia);
+  assert.match(html, /&lt;img/);
+  assert.doesNotMatch(html, /<img/);
+});
 
 test("五项统计与告警口径一致", () => {
   assert.deepEqual(
     dashboardStats.map((item) => item.label),
     ["在线无人机", "今日巡检任务", "疑似火情", "AI告警", "高风险区域"]
   );
-  assert.equal(
-    dashboardStats[2].value,
-    dashboardAlerts.filter((item) => item.status !== "已排除").length
+  const source = readFileSync(resolve(root, "index.vue"), "utf8");
+  assert.match(source, /value: alerts.pendingAlerts.length/);
+  assert.match(source, /alerts.alerts.filter/);
+  assert.doesNotMatch(
+    readFileSync(resolve(root, "mock.ts"), "utf8"),
+    /dashboardAlerts|DashboardAlert/
   );
-  assert.equal(
-    dashboardStats[3].value,
-    dashboardAlerts.filter((item) => item.confidence !== null).length
-  );
-  assert.equal(new Set(dashboardAlerts.map((item) => item.id)).size, dashboardAlerts.length);
-  for (const alert of dashboardAlerts) {
-    assert.ok(alert.confidence === null || (alert.confidence >= 0 && alert.confidence <= 1));
-  }
 });
 
 test("首页渲染系统名称、五项统计和地图容器，不保留模板业务", async () => {
@@ -322,37 +362,4 @@ test("Vue 挂载响应地图事件、切换图层，卸载释放地图和尺寸�
     Object.assign(globalThis, original);
     delete globalThis.__dashboardLeafletTest;
   }
-});
-
-test("告警完整展示六项字段，详情使用原生可展开控件且默认折叠", async () => {
-  const html = await render("components/DashboardAlerts.vue", { alerts: dashboardAlerts });
-  assert.equal((html.match(/<details/g) ?? []).length, dashboardAlerts.length);
-  assert.doesNotMatch(html, /<details[^>]*\sopen/);
-  for (const alert of dashboardAlerts) {
-    for (const text of [
-      alert.time,
-      alert.type,
-      alert.source,
-      alert.status,
-      alert.description,
-      `查看告警 ${alert.id} 详情`,
-    ])
-      assert.ok(html.includes(text));
-  }
-  assert.match(html, /96%/);
-  assert.match(html, /不适用（人工上报）/);
-});
-
-test("空告警显示空状态", async () => {
-  const html = await render("components/DashboardAlerts.vue", { alerts: [] });
-  assert.match(html, /暂无告警/);
-  assert.doesNotMatch(html, /<details/);
-});
-
-test("外部文本被转义，不作为 HTML 执行", async () => {
-  const html = await render("components/DashboardAlerts.vue", {
-    alerts: [{ ...dashboardAlerts[0], description: '<img src=x onerror="alert(1)">' }],
-  });
-  assert.match(html, /&lt;img/);
-  assert.doesNotMatch(html, /<img/);
 });

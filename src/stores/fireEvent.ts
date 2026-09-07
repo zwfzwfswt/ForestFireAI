@@ -35,7 +35,7 @@ export const useFireEventStore = defineStore("fire-events", () => {
     select(eventId);
     detailOpen.value = !!selectedId.value;
   }
-  function createEvent(input: FireInput) {
+  function createRecord(input: FireInput) {
     const fields = normalizedInput(input);
     const now = new Date().toISOString();
     const event: FireEvent = {
@@ -53,8 +53,51 @@ export const useFireEventStore = defineStore("fire-events", () => {
       timeline: [],
       actions: [],
     };
+    return event;
+  }
+  function createEvent(input: FireInput) {
+    const event = createRecord(input);
     events.value = [...events.value, event];
     return event;
+  }
+  function linkAlert(eventId: string, alertId: string) {
+    const event = requireEvent(eventId);
+    if (!alertId || events.value.some((item) => item.alertIds.includes(alertId)))
+      throw new Error("告警已经关联，不能重复关联");
+    return replace({
+      ...event,
+      alertIds: [...event.alertIds, alertId],
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  // 已确认告警由用户明确升级；共用创建和状态机，构造完成后一次写入。
+  function createFromAlert(input: FireInput, alertId: string) {
+    if (!alertId || events.value.some((item) => item.alertIds.includes(alertId)))
+      throw new Error("告警已经关联");
+    let event = createRecord(input);
+    for (const to of ["verifying", "confirmed"] as const)
+      event = transitionFire(event, to, {
+        id: id(),
+        operator: "Mock 研判员",
+        timestamp: event.createdAt,
+        remark: "人工从已确认告警创建事件",
+      });
+    event = { ...event, alertIds: [alertId] };
+    events.value = [...events.value, event];
+    return event;
+  }
+  // 仅供 Alert 会话初始化/重置同步关联，事件内容与历史保持不变。
+  function replaceAlertLinks(links: readonly { alertId: string; eventId: string }[]) {
+    const seen = new Set<string>();
+    for (const link of links) {
+      requireEvent(link.eventId);
+      if (seen.has(link.alertId)) throw new Error("告警关联重复");
+      seen.add(link.alertId);
+    }
+    events.value = events.value.map((event) => ({
+      ...event,
+      alertIds: links.filter((link) => link.eventId === event.id).map((link) => link.alertId),
+    }));
   }
   function updateEvent(eventId: string, input: FireInput) {
     const event = requireEvent(eventId);
@@ -125,6 +168,9 @@ export const useFireEventStore = defineStore("fire-events", () => {
     select,
     showDetail,
     createEvent,
+    createFromAlert,
+    linkAlert,
+    replaceAlertLinks,
     updateEvent,
     transitionStatus: addTimeline,
     addTimeline,

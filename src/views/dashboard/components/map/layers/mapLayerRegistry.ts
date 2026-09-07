@@ -11,6 +11,7 @@ export type MapLayerId =
   | "UAVTrackLayer"
   | "MissionLayer"
   | "FireEventLayer"
+  | "FireAlertLayer"
   | "RemoteSensingLayer"
   | "FireRiskLayer"
   | "ResourceLayer";

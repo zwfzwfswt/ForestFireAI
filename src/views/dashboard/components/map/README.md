@@ -1,5 +1,7 @@
 # Dashboard GIS 工具与业务图层
 
+统一告警中心新增独立 `FireAlertLayer`（pane `ff-business-FireAlertLayer`，zIndex 810），当前目录共19项。Dashboard 告警与地图都读取 [Fire Alert Store](../../../fire/alerts/README.md)，默认16条 Mock；不与 FireEventLayer 混用，清除 Drawing 不影响两者。
+
 本模块使用已有 Leaflet 1.9.4 原生 API，无新增依赖、接口或数据库。绘制仅修改当前地图会话的临时数据；UAV 资产来自会话级 Mock store，见 [无人机资产模块](../../../uav/README.md)。沿用现有登录访问链路，不创建真实业务写入权限或控制命令。
 
 ## 组织与图层

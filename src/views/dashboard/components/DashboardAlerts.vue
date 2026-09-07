@@ -1,58 +1,54 @@
 <template>
   <aside class="dashboard-alerts" aria-labelledby="alerts-title">
     <header>
-      <h2 id="alerts-title">实时火情 / 告警</h2>
-      <span>Mock · {{ alerts.length }} 条</span>
+      <h2 id="alerts-title">待研判告警</h2>
+      <span>Mock · 待处理 {{ store.pendingAlerts.length }} 条</span>
     </header>
-    <p class="dashboard-alerts__notice">静态演示数据，未连接实时告警服务；AI 结果需人工复核。</p>
+    <p>仅显示最新 {{ dashboardAlertLimit }} 条新告警或研判中信号；未连接真实告警服务。</p>
     <div class="dashboard-alerts__list">
-      <p v-if="alerts.length === 0">暂无告警</p>
-      <article v-for="alert in alerts" :key="alert.id" class="alert-card">
-        <div class="alert-card__heading">
-          <h3>{{ alert.type }}</h3>
-          <span :class="['alert-card__level', { 'alert-card__level--high': alert.level === '高' }]">
-            {{ alert.level }}等级
+      <p v-if="!store.dashboardAlerts.length">暂无待处理告警</p>
+      <article
+        v-for="alert in store.dashboardAlerts"
+        :key="alert.id"
+        class="alert-card"
+        :data-alert-id="alert.id"
+      >
+        <h3>{{ alertTypeConfig[alert.type].label }} · {{ alert.title }}</h3>
+        <p>
+          {{ alert.code }} ·
+          <span :style="{ color: alertLevelConfig[alert.level].color }">
+            {{ alertLevelConfig[alert.level].label }}等级
           </span>
-        </div>
-        <p class="alert-card__area">{{ alert.area }}</p>
+          · {{ alertStatusConfig[alert.status].label }}
+        </p>
+        <p>
+          {{ alert.location.address || alert.location.longitude + ", " + alert.location.latitude }}
+        </p>
         <dl>
-          <div>
-            <dt>告警时间</dt>
-            <dd>{{ alert.time }}</dd>
-          </div>
-          <div>
-            <dt>来源</dt>
-            <dd>{{ alert.source }}</dd>
-          </div>
-          <div>
-            <dt>置信度</dt>
-            <dd>
-              {{
-                alert.confidence === null
-                  ? "不适用（人工上报）"
-                  : `${Math.round(alert.confidence * 100)}%`
-              }}
-            </dd>
-          </div>
-          <div>
-            <dt>状态</dt>
-            <dd>{{ alert.status }}</dd>
-          </div>
+          <dt>发现时间</dt>
+          <dd>{{ fireTime(alert.detectedAt) }}</dd>
+          <dt>来源</dt>
+          <dd>{{ alertSourceConfig[alert.source].label }}</dd>
+          <dt>置信度</dt>
+          <dd>{{ alertConfidence(alert.confidence) }}</dd>
         </dl>
-        <details>
-          <summary :aria-label="`查看告警 ${alert.id} 详情`">查看详情</summary>
-          <div class="alert-card__detail">
-            <strong>{{ alert.id }} · Mock 告警详情</strong>
-            <p>{{ alert.description }}</p>
-          </div>
-        </details>
+        <button type="button" @click="store.showDetail(alert.id)">查看告警 / 研判</button>
       </article>
     </div>
   </aside>
 </template>
 <script setup lang="ts">
-import type { DashboardAlert } from "../mock";
-defineProps<{ alerts: DashboardAlert[] }>();
+import { useFireAlertStore } from "../../../stores/fireAlert";
+import {
+  alertTypeConfig,
+  alertSourceConfig,
+  alertStatusConfig,
+  alertLevelConfig,
+  alertConfidence,
+  dashboardAlertLimit,
+} from "../../fire/alerts/config";
+import { fireTime } from "../../fire/config";
+const store = useFireAlertStore();
 </script>
 <style scoped lang="scss">
 .dashboard-alerts {
@@ -76,9 +72,8 @@ defineProps<{ alerts: DashboardAlert[] }>();
     font-size: 16px;
   }
   header span,
-  &__notice {
+  > p {
     font-size: 12px;
-    line-height: 1.7;
     color: var(--el-text-color-secondary);
   }
   &__list {
@@ -89,58 +84,31 @@ defineProps<{ alerts: DashboardAlert[] }>();
 }
 .alert-card {
   padding: 16px 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
   border-top: 1px solid var(--card-border);
-  &__heading {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
-  }
   h3 {
     margin: 0;
     font-size: 14px;
   }
-  &__level {
-    font-size: 12px;
-    color: var(--el-color-warning);
-    &--high {
-      color: var(--el-color-danger);
-    }
-  }
-  &__area {
-    font-size: 13px;
-    color: var(--el-text-color-secondary);
-  }
   dl {
     display: grid;
+    grid-template-columns: 60px minmax(0, 1fr);
     gap: 8px;
-    font-size: 12px;
-    div {
-      display: grid;
-      grid-template-columns: 60px minmax(0, 1fr);
-      gap: 8px;
-    }
   }
   dt {
     color: var(--el-text-color-secondary);
   }
   dd {
     margin: 0;
-    overflow-wrap: anywhere;
   }
-  summary {
-    width: fit-content;
-    padding: 6px 0;
-    font-size: 13px;
+  button {
+    padding: 6px 8px;
     color: var(--el-color-primary);
     cursor: pointer;
-  }
-  &__detail {
-    padding: 12px;
-    font-size: 12px;
-    line-height: 1.8;
-    background: var(--el-fill-color-light);
-    border-radius: 6px;
+    background: var(--el-bg-color-overlay);
+    border: 1px solid var(--el-border-color);
+    border-radius: 4px;
   }
 }
 </style>
