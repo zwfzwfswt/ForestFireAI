@@ -9,6 +9,7 @@ from app.core.config import Settings
 from app.simulator.fleet import UavSimulator
 from app.telemetry.bus import TelemetryBus
 from app.mqtt.consumer import MqttConsumer
+from app.mavsdk.telemetry_source import MavsdkTelemetrySource
 from app.websocket.manager import ConnectionManager
 
 
@@ -23,16 +24,20 @@ def create_app(settings: Settings | None = None):
         bus = TelemetryBus()
         bus.subscribe(manager.handle_telemetry)
         consumer = MqttConsumer(config, bus) if config.telemetry_input_mode == "mqtt" else None
+        mavsdk = MavsdkTelemetrySource(config, bus) if config.telemetry_input_mode == "mavsdk" else None
         app.state.connections = manager
         app.state.simulator = simulator
         app.state.telemetry_bus = bus
         app.state.mqtt = consumer
+        app.state.mavsdk = mavsdk
         app.state.config = config
         task = None
         try:
             if consumer is not None:
                 await consumer.start()
-            if config.simulator_enabled:
+            if mavsdk is not None:
+                await mavsdk.start()
+            elif config.simulator_enabled:
                 task = asyncio.create_task(simulator.run(consumer.publish if consumer else bus.publish),
                                            name="uav-mock-simulator")
             app.state.simulator_task = task
@@ -48,8 +53,12 @@ def create_app(settings: Settings | None = None):
                     if consumer is not None:
                         await consumer.stop()
                 finally:
-                    bus.unsubscribe(manager.handle_telemetry)
-                    await manager.close_all()
+                    try:
+                        if mavsdk is not None:
+                            await mavsdk.stop()
+                    finally:
+                        bus.unsubscribe(manager.handle_telemetry)
+                        await manager.close_all()
 
     app = FastAPI(title="ForestFireAI Backend · DEV / MOCK", lifespan=lifespan)
     app.include_router(router)

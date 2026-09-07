@@ -238,3 +238,132 @@ MQTT Chromium：先启动 Broker，再将 TELEMETRY_INPUT_MODE 改 mqtt，配置
 - 轨迹交替跳动：不要同时启动内置模拟器与相同 ID 的独立 Publisher。
 - status 显示 disabled：环境变量必须设置在启动 Uvicorn 的同一终端。
 - Docker 命令不存在：准备 Docker Compose 后再运行容器；本次机器无 Docker，使用工作区解包的 Mosquitto 2.0.22 验证真实网络，未执行 Compose 容器启动。
+
+## PX4 SITL + MAVSDK 只读遥测 V1
+
+ForestFireAI 无需真机即可测试。PX4 SITL 是仿真飞控，MAVSDK 是 MAVLink 通信层；本阶段只订阅 position、velocity_ned、heading、battery 和 connection_state。没有飞行命令服务、控制按钮、参数写入或控制 HTTP API；也不调用遥测速率设置，输出频率只在本地聚合器控制。
+
+```mermaid
+flowchart LR
+  PX4[PX4 SITL] -->|MAVLink| SDK[官方 MAVSDK Python / native server]
+  SDK --> S[MavsdkTelemetrySource]
+  S --> B[现有 TelemetryBus]
+  B --> W[现有 WebSocket Manager]
+  W --> T[现有 Telemetry Store]
+  T --> L[Leaflet / UAV 详情]
+```
+
+新增 `app/mavsdk/client.py`、`mapper.py`、`telemetry_source.py`，分别负责只读 SDK 资源、字段聚合映射、连接与订阅生命周期。main 只做模式装配；Bus、WebSocket Manager 不感知 MAVSDK。mavsdk 模式不启动 Python Simulator 或 MQTT Consumer，direct/mqtt 原路径保留。
+
+依赖固定 `mavsdk==3.17.2`，没有 DroneKit 或 pymavlink。该 SDK 通过 gRPC 连接包内的官方 mavsdk_server。此版本 System 没有公开的异步 close，因此 client 显式持有原生子进程和 gRPC channel，只实例化官方 Core、Telemetry 插件。关闭时先取消并等待订阅，再关闭 channel、终止并等待子进程；SDK 内部 gRPC 使用独立临时端口，不应对外映射。升级 SDK 时需重验此适配边界。
+
+连接地址已经核对 [官方 MAVSDK-Python 连接说明](https://github.com/mavlink/MAVSDK-Python/blob/main/mavsdk/system.py) 及已安装 3.17.2 的 `mavsdk_server --help`：使用 `udpin://0.0.0.0:14540`。不要套用旧版示例 `udp://:14540`。
+
+| 配置                      | 默认                  | 含义                                    |
+| ------------------------- | --------------------- | --------------------------------------- |
+| TELEMETRY_INPUT_MODE      | direct                | direct / mqtt / mavsdk                  |
+| MAVSDK_SYSTEM_ADDRESS     | udpin://0.0.0.0:14540 | MAVLink UDP 监听地址                    |
+| MAVSDK_UAV_ID             | mock-uav-1            | 对应现有前端资产 ID                     |
+| MAVSDK_CONNECT_TIMEOUT    | 10                    | 秒，分别限制 SDK 通道连接与等待飞控连接 |
+| MAVSDK_RECONNECT_INTERVAL | 3                     | 秒，失败后的等待间隔                    |
+| MAVSDK_TELEMETRY_INTERVAL | 1                     | 秒，完整遥测最大输出频率                |
+| MAVSDK_FIELD_TIMEOUT      | 5                     | 秒，每个必需流的最大数据年龄            |
+
+### 字段与聚合语义
+
+| 统一字段             | MAVSDK 来源 / 规则                                                          |
+| -------------------- | --------------------------------------------------------------------------- |
+| uavId                | MAVSDK_UAV_ID，仅身份映射，不自动创建资产                                   |
+| timestamp            | position 到达后端时的 UTC 时间，不是 PX4 启动时钟或精确传感器采集时间       |
+| longitude / latitude | position.longitude_deg / latitude_deg，WGS84 度                             |
+| altitude             | position.relative_altitude_m，米，相对飞控 Home 高度                        |
+| speed                | hypot(velocity.north_m_s, velocity.east_m_s)，水平 m/s，排除 down 分量      |
+| heading              | heading.heading_deg，校验 0–360，360 归一为 0                               |
+| battery              | remaining_percent；固定版本 3.17.2 文档定义为 0–100，直接校验映射，不乘 100 |
+| signal               | null，未采集可靠链路信号，不填虚假百分比                                    |
+| status               | 有连接且完整有效遥测时 online，不推断任务、充电或维护状态                   |
+
+altitude **不是海拔 AMSL，也不是离地 AGL**。现有前端使用“相对起飞点高度”标签；这里按飞控 Home 解释，不保证 Home 一直等于初始起飞地面位置。不使用 absolute_altitude_m 代替缺失的 relative_altitude_m。
+
+聚合器每个流只保留一条最新值、单调接收时间与 UTC 接收时间。四个字段流齐全且各自未过期后，按配置周期生成一条完整 TelemetryMessage；没有新 position 不重复刷新旧坐标的时间戳。任一流过期即停止输出，使前端五秒离线判定继续生效。不同流无需同频或同步到达。非法经纬度、高度、速度、航向、电量或时间记录 warning 并丢弃该帧，后续正常帧继续处理。
+
+signal schema 从必填 number 扩展为必填 number|null，旧数字帧保持兼容，缺字段仍拒绝。部署时先更新前端，再启用 mavsdk 模式；旧前端会拒绝 null 帧。前端仅调整通用协议类型和校验，不加 MAVSDK 专属逻辑；详情/列表沿用缺失值显示。未知资产由持有资产唯一来源的前端 Store 拒绝并输出 `Telemetry rejected: UAV Asset not found` 警告，不产生 Marker 或资产。后端当前没有资产数据库，无法独立确认浏览器内的新增/删除；默认 ID 对应现有 mock-uav-1，可在详情查看实际资产 ID 后设置。
+
+连接状态为 connecting/connected/disconnected/reconnecting/error。飞控断开、流结束或异常会清理本轮订阅和缓存，等待配置间隔再创建新连接。重新连接需重新收齐四个流，旧缓存不跨连接复用。shutdown 会取消重连等待，不遗留订阅任务。
+
+GET `/api/v1/system/status` 在 mavsdk 模式返回：
+
+```json
+{
+  "backend": "ok",
+  "mqtt": "disabled",
+  "telemetryInputMode": "mavsdk",
+  "mavsdk": "connected",
+  "mavsdkUavId": "mock-uav-1",
+  "connectedWebSocketClients": 1
+}
+```
+
+connected 表示飞控连接，不保证 GPS 等字段齐全；同时检查浏览器遥测更新时间。direct/mqtt 的原状态响应不变。
+
+### 开发启动
+
+Windows 推荐按 [PX4 官方 WSL2 指南](https://docs.px4.io/main/en/dev_setup/dev_env_windows_wsl) 准备 Ubuntu，或采用官方预构建仿真环境。本任务未安装或更改 WSL、PX4、Gazebo。为避免 WSL NAT 的 UDP 转发问题，建议 PX4 与 Python 后端运行在同一个 WSL 网络环境。
+
+在已经准备好的 PX4 工程内，按对应 PX4 版本的 [Gazebo 仿真说明](https://docs.px4.io/main/en/sim_gazebo_gz/) 启动：
+
+```bash
+make px4_sitl gz_x500
+```
+
+保持仿真飞控静止即可观察遥测，不需要解锁或起飞。SITL 的默认地理位置可能不在当前森林 Mock 区域，收到数据后可通过 UAV 列表“定位”查看，不改地图默认视角，不伪造位置。
+
+另开同环境的后端终端（首次先创建 venv 并安装 requirements-dev.txt）：
+
+```bash
+cd backend
+source .venv/bin/activate
+export TELEMETRY_INPUT_MODE=mavsdk
+export MAVSDK_SYSTEM_ADDRESS=udpin://0.0.0.0:14540
+export MAVSDK_UAV_ID=mock-uav-1
+uvicorn app.main:app --reload
+```
+
+Windows 后端可使用 PowerShell，但应确保 SITL UDP 数据能到达 Windows 的监听端口：
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+$env:TELEMETRY_INPUT_MODE = 'mavsdk'
+$env:MAVSDK_SYSTEM_ADDRESS = 'udpin://0.0.0.0:14540'
+$env:MAVSDK_UAV_ID = 'mock-uav-1'
+uvicorn app.main:app --reload
+```
+
+前端仓库根目录 `.env.development.local` 设置 `VITE_TELEMETRY_SOURCE=websocket`、`VITE_TELEMETRY_WS_URL=ws://127.0.0.1:8000/ws/telemetry`，运行 `pnpm dev`。确认 status 中 mavsdk=connected，然后在 UAV 详情检查位置、高度、速度、航向、电量和最后更新时间；信号显示缺失属于预期。关闭 SITL 后连接状态变化且超过五秒没有新遥测时 UAV 离线，重启 SITL 后自动恢复。
+
+### 验证与实测范围
+
+普通 Backend tests 使用异步 SDK Mock，不要求安装或启动 PX4。包含字段映射、无效值、异频聚合、过期、不重复刷新位置、连接/超时/断开/重连/关闭、Bus→WebSocket、System Status 与只读接口检查。另测试官方 SDK 子进程和 channel 的关闭，不连接飞控。
+
+MAVSDK Mock 适配器到真实 Chromium 的测试（仓库根目录）：
+
+```powershell
+$env:FORESTFIRE_PYTHON = (Resolve-Path backend/.venv/Scripts/python.exe).Path
+$env:FF_BACKEND_SMOKE = '1'
+$env:FF_MAVSDK_MOCK = '1'
+pnpm exec node --test src/views/uav/testing/simulator-browser.test.mjs
+Remove-Item Env:FF_MAVSDK_MOCK
+```
+
+测试入口仅位于 backend/tests，生产没有 Mock SDK 开关。该测试验证真实 source/bus/WebSocket/Store/Leaflet、null 信号、Marker 复用、轨迹、详情、离线与恢复，**不是 PX4 SITL 实测**。
+
+若已运行可用 SITL，显式启用只读集成测试，在 backend 目录：
+
+```powershell
+$env:FORESTFIRE_SITL_TEST = '1'
+$env:MAVSDK_SYSTEM_ADDRESS = 'udpin://0.0.0.0:14540'
+python -m pytest -q tests/test_sitl_integration.py
+```
+
+未设置时此项明确跳过。本次本机及已有 Ubuntu-22.04 WSL 未发现 PX4 工程/可执行文件，因此没有执行 PX4→MAVLink→MAVSDK 实测，不能把 Mock 验证当作真实飞控验证。

@@ -17,7 +17,7 @@ class TelemetryMessage(BaseModel):
     speed: float = Field(ge=0)
     heading: float = Field(ge=0, lt=360)
     battery: float = Field(ge=0, le=100)
-    signal: float = Field(ge=0, le=100)
+    signal: float | None = Field(ge=0, le=100)  # Required; null means unavailable.
     status: Literal["online", "offline", "mission", "charging", "maintenance", "warning"]
 
     @field_validator("timestamp")

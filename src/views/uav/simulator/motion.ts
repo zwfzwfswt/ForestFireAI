@@ -66,7 +66,10 @@ export function moveTelemetry(previous: UavTelemetry, timestamp: number): UavTel
     longitude: clamp(longitude, b.west, b.east),
     latitude: clamp(latitude, b.south, b.north),
     altitude: clamp(previous.altitude + Math.sin(timestamp / 15000 + phase) * 0.2 * dt, 20, 200),
-    signal: clamp(previous.signal + Math.sin(timestamp / 10000 + phase) * 0.1 * dt, 0, 100),
+    signal:
+      previous.signal === null
+        ? null
+        : clamp(previous.signal + Math.sin(timestamp / 10000 + phase) * 0.1 * dt, 0, 100),
     status: battery < 10 ? "warning" : "online",
   };
 }

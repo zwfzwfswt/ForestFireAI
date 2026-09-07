@@ -24,7 +24,6 @@ export function parseTelemetryMessage(raw: unknown): UavTelemetry | null {
         value.speed,
         value.heading,
         value.battery,
-        value.signal,
       ].every((n) => typeof n === "number" && Number.isFinite(n)) ||
       Math.abs(value.longitude) > 180 ||
       Math.abs(value.latitude) > 90 ||
@@ -33,8 +32,11 @@ export function parseTelemetryMessage(raw: unknown): UavTelemetry | null {
       value.heading >= 360 ||
       value.battery < 0 ||
       value.battery > 100 ||
-      value.signal < 0 ||
-      value.signal > 100 ||
+      (value.signal !== null &&
+        (typeof value.signal !== "number" ||
+          !Number.isFinite(value.signal) ||
+          value.signal < 0 ||
+          value.signal > 100)) ||
       typeof value.status !== "string" ||
       !Object.hasOwn(uavStatuses, value.status)
     )

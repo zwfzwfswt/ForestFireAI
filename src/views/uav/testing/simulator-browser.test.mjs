@@ -18,9 +18,12 @@ const browser =
   ].find(existsSync);
 const duration = process.env.GIS_SOAK === "1" ? 600000 : 2000;
 const backendMode = process.env.FF_BACKEND_SMOKE === "1";
+const mavsdkMock = backendMode && process.env.FF_MAVSDK_MOCK === "1";
 test(
   backendMode
-    ? "Chromium real Python backend telemetry chain"
+    ? mavsdkMock
+      ? "Chromium MAVSDK mock adapter → Python source → WebSocket → Leaflet (not PX4 SITL)"
+      : "Chromium real Python backend telemetry chain"
     : "Chromium simulator smoke / optional ten-minute wall-clock soak",
   { skip: !browser, timeout: duration + 90000 },
   async () => {
@@ -97,7 +100,7 @@ test(
           const app=createApp({setup:()=>()=>h(KeepAlive,null,{default:()=>active.value?h(view.value==='/dashboard'?ForestFireMap:UavPage):null})}).use(pinia).use(router);
           app.mount('#app');
           let result;
-          try { result=await ${backendMode ? "runBackendBrowserChecks" : "runSimulatorBrowserChecks"}({store,telemetry,simulator,active,nextTick,router,maps,duration:${duration}}); }
+          try { result=await ${backendMode ? "runBackendBrowserChecks" : "runSimulatorBrowserChecks"}({store,telemetry,simulator,active,nextTick,router,maps,duration:${duration},fleetSize:${mavsdkMock ? 1 : 5},signalUnavailable:${mavsdkMock}}); }
           catch(error){result={error:error.message,stack:error.stack};}
           app.unmount(); await fetch('/__sim_result__',{method:'POST',body:JSON.stringify(result)});
         </script></body></html>`;

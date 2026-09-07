@@ -22,6 +22,7 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
   }
   onScopeDispose(stopClock);
   let assetIds = new Set<string>();
+  let warnedUnknownId = "";
   function remove(id: string) {
     const latest = { ...latestTelemetryByUavId.value };
     const tracks = { ...tracksByUavId.value };
@@ -37,8 +38,14 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
     });
   }
   function updateTelemetry(packet: UavTelemetry, receivedAt = Date.now()) {
+    if (!assetIds.has(packet.uavId)) {
+      if (warnedUnknownId !== packet.uavId) {
+        console.warn("Telemetry rejected: UAV Asset not found", packet.uavId);
+        warnedUnknownId = packet.uavId;
+      }
+      return false;
+    }
     if (
-      !assetIds.has(packet.uavId) ||
       !Object.hasOwn(uavStatuses, packet.status) ||
       ![
         packet.timestamp,
@@ -48,7 +55,6 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
         packet.speed,
         packet.heading,
         packet.battery,
-        packet.signal,
         receivedAt,
       ].every(Number.isFinite) ||
       packet.timestamp > receivedAt ||
@@ -61,8 +67,8 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
       packet.heading >= 360 ||
       packet.battery < 0 ||
       packet.battery > 100 ||
-      packet.signal < 0 ||
-      packet.signal > 100
+      (packet.signal !== null &&
+        (!Number.isFinite(packet.signal) || packet.signal < 0 || packet.signal > 100))
     )
       return false;
     now.value = receivedAt;
@@ -85,6 +91,7 @@ export const useTelemetryStore = defineStore("uav-telemetry", () => {
     return !!packet && now.value - packet.timestamp > simulatorConfig.offlineTimeout;
   };
   function reset() {
+    warnedUnknownId = "";
     latestTelemetryByUavId.value = {};
     tracksByUavId.value = {};
     now.value = Date.now();

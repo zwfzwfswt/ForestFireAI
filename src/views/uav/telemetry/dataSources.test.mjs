@@ -120,6 +120,38 @@ function websocket() {
   source.subscribe((p) => packets.push(p));
   return { source, clock, states, packets, socket: () => FakeSocket.sockets.at(-1) };
 }
+
+test("unavailable signal stays null; missing/invalid signal rejected; unknown asset warns without creation", () => {
+  setActivePinia(createPinia());
+  const assets = useUavStore();
+  const telemetry = useTelemetryStore();
+  const now = Date.now();
+  const parsed = parseTelemetryMessage(JSON.stringify(packet(now, { signal: null })));
+  assert.equal(parsed.signal, null);
+  assert.equal(telemetry.updateTelemetry(parsed, now), true);
+  assets.select(parsed.uavId);
+  assert.equal(assets.selectedUav.telemetry.signal, null);
+  assert.equal(telemetry.tracksByUavId[parsed.uavId].length, 1);
+  telemetry.now = now + 5001;
+  assert.equal(assets.selectedUav.status, "offline");
+  for (const signal of [undefined, "90", false, -1, 101]) {
+    assert.equal(parseTelemetryMessage(JSON.stringify(packet(now, { signal }))), null);
+  }
+  const warn = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args);
+  try {
+    assert.equal(telemetry.updateTelemetry({ ...parsed, uavId: "not-an-asset" }, now), false);
+    assert.equal(telemetry.updateTelemetry({ ...parsed, uavId: "not-an-asset" }, now), false);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0][0], /UAV Asset not found/);
+    assert.equal(assets.list.length, 8);
+  } finally {
+    console.warn = warn;
+    telemetry.$dispose();
+    assets.$dispose();
+  }
+});
 test("local source uses the same subscribe/start/stop contract and retains pause controls", () => {
   const timers = fakeTimers();
   const packets = [];

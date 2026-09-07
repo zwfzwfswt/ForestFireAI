@@ -10,6 +10,6 @@ export interface UavTelemetry {
   speed: number;
   heading: number;
   battery: number;
-  signal: number;
+  signal: number | null;
   status: UavStatus;
 }

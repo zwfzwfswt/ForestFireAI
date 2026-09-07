@@ -6,6 +6,8 @@ export async function runBackendBrowserChecks({
   nextTick,
   router,
   maps,
+  fleetSize = 5,
+  signalUnavailable = false,
 }) {
   const passed = [];
   const check = (value, message) => {
@@ -38,7 +40,9 @@ export async function runBackendBrowserChecks({
     const response = await fetch(`/__backend_${command}__`, { method: "POST" });
     check(response.ok, `后端 ${command} 失败`);
   };
-  await waitFor(() => state()?.ready && Object.keys(telemetry.latestTelemetryByUavId).length === 5);
+  await waitFor(
+    () => state()?.ready && Object.keys(telemetry.latestTelemetryByUavId).length === fleetSize
+  );
   check(
     simulator.source === "websocket" && simulator.connection.status === "connected",
     "环境变量未选择 WebSocket"
@@ -58,7 +62,8 @@ export async function runBackendBrowserChecks({
     "WebSocket 重建了 Marker"
   );
   check(original[0].getLatLng().lng !== position.lng, "后端遥测未移动 Marker");
-  check(tracks().length === 5 && telemetry.tracksByUavId[id].length >= 2, "后端轨迹未增长");
+  check(tracks().length === fleetSize && telemetry.tracksByUavId[id].length >= 2, "后端轨迹未增长");
+  if (signalUnavailable) check(telemetry.getLatestTelemetry(id).signal === null, "未知信号被伪造");
   original[0].fire("click");
   original[0].openPopup();
   await nextTick();
@@ -68,6 +73,10 @@ export async function runBackendBrowserChecks({
   document.querySelector(".uav-map-selection button").click();
   await waitFor(() => document.querySelector(".el-drawer"));
   const detail = document.querySelector(".el-drawer").textContent;
+  if (signalUnavailable) {
+    check(store.selectedUav.telemetry.signal === null, "详情未保留未知信号");
+    check(detail.includes("暂无快照"), "详情未显示信号缺失");
+  }
   await sleep(1100);
   await nextTick();
   check(document.querySelector(".el-drawer").textContent !== detail, "后端详情未刷新");
@@ -79,7 +88,7 @@ export async function runBackendBrowserChecks({
   check(tracks().length === 0, "轨迹不能单独隐藏");
   state().business.setVisible("UAVTrackLayer", true);
   state().drawing.clear();
-  check(tracks().length === 5, "清除绘制影响轨迹");
+  check(tracks().length === fleetSize, "清除绘制影响轨迹");
   check(document.querySelectorAll(".ff-business-symbol").length === 4, "业务火点/资源丢失");
   await router.push("/uav/list");
   await nextTick();
@@ -115,7 +124,7 @@ export async function runBackendBrowserChecks({
   await nextTick();
   check(simulator.state.timerActive && simulator.source === "local", "本地来源不能恢复运行");
   await switchSource("websocket");
-  await waitFor(() => Object.keys(telemetry.latestTelemetryByUavId).length === 5);
+  await waitFor(() => Object.keys(telemetry.latestTelemetryByUavId).length === fleetSize);
   check(!simulator.state.timerActive, "切换后本地 timer 未停止");
   passed.push("页面停用/激活、重连取消与 local/websocket 互斥切换");
   await router.push("/dashboard");

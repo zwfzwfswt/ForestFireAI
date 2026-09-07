@@ -34,7 +34,8 @@ export async function createBackendHarness() {
       [
         "-m",
         "uvicorn",
-        "app.main:app",
+        process.env.FF_MAVSDK_MOCK === "1" ? "mavsdk_browser_app:app" : "app.main:app",
+        ...(process.env.FF_MAVSDK_MOCK === "1" ? ["--app-dir", "tests"] : []),
         "--host",
         "127.0.0.1",
         "--port",
