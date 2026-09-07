@@ -100,7 +100,8 @@ test("Mock 8 scenes / 12 products / 15 hotspots / 8 zones，覆盖时间、类�
   assert.deepEqual(new Set(risk.riskZones.map((z) => z.level)), new Set(Object.keys(riskLevels)));
   for (const z of risk.riskZones) {
     assert.ok(z.score >= 0 && z.score <= 100);
-    for (const factor of Object.values(z.factors)) assert.ok(factor >= 0 && factor <= 100);
+    for (const factor of Object.values(z.factors))
+      assert.ok(factor.score >= 0 && factor.score <= 100);
     assert.deepEqual(z.geometry.coordinates[0][0], z.geometry.coordinates[0].at(-1));
   }
 });

@@ -2,6 +2,7 @@ import type { PathOptions } from "leaflet";
 
 // 颜色、符号、线宽和面填充集中维护。图标文字区分语义，不只依赖颜色。
 export const layerStyles = {
+  weather: { color: "#0369a1", glyph: "气", path: { weight: 2 } },
   raster: { color: "#237a42", glyph: "影", path: { weight: 1 } },
   hotspot: { color: "#fd6b22", glyph: "●", path: { weight: 2 } },
   boundary: {

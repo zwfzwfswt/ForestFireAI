@@ -58,6 +58,8 @@ export const layerDefinitions: readonly LayerDefinition[] = [
     true
   ),
   define("RoadLayer", "道路", "geography", "polyline", "road", 410, "road", true),
+  define("WeatherStationLayer", "气象站", "geography", "marker", "resource", 590, "weather"),
+  define("WindLayer", "风场（预留）", "geography", "polyline", "track", 530, "weather"),
   define("WaterwayLayer", "水系", "geography", "geojson", "boundary", 355, "water"),
   define("ForestExtentLayer", "林地范围", "forest", "polygon", "boundary", 360, "forest"),
   define("ForestCompartmentLayer", "林班", "forest", "polygon", "boundary", 365, "forest"),

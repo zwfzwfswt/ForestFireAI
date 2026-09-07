@@ -181,7 +181,7 @@ export async function runRemoteSensingBrowserChecks({
     await waitFor(() => rows(".risk-page").length === 8);
     await button("详情", rows(".risk-page")[0]);
     check(
-      document.querySelector(".remote-detail").textContent.includes("水分因素（Mock）"),
+      document.querySelector(".remote-detail").textContent.includes("水分亏缺"),
       "风险因子详情"
     );
     await close();
@@ -189,7 +189,7 @@ export async function runRemoteSensingBrowserChecks({
     await waitFor(
       () => state()?.ready && pane("FireRiskLayer")?.querySelectorAll(".ff-risk-zone").length === 8
     );
-    check(pane("FireRiskLayer").textContent.includes("水分："), "风险Popup");
+    check(pane("FireRiskLayer").textContent.includes("水分亏缺："), "风险Popup");
     // 统计组件 class 由既有实现决定，使用 Dashboard 文本与源 Store 双重核对。
     check(
       risk.highRiskCount === 4 &&

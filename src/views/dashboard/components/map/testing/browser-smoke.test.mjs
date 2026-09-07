@@ -61,7 +61,7 @@ async function browserChecks() {
     await waitFor(() => document.querySelector(".forest-map") && state().ready);
     const businessState = (id) => state().businessStates.find((layer) => layer.id === id);
     const pane = (id) => document.querySelector(`.leaflet-${businessState(id).pane}-pane`);
-    check(state().businessStates.length === 21, "业务图层注册数量错误");
+    check(state().businessStates.length === 23, "业务图层注册数量错误");
     check(
       pane("FireEventLayer").querySelectorAll(".ff-fire-symbol").length === 10,
       "两个 Mock 火点未加载"
@@ -244,7 +244,18 @@ test(
       appType: "custom",
       optimizeDeps: {
         noDiscovery: true,
-        include: ["vue", "vue-router", "leaflet", "pinia", "element-plus"],
+        include: [
+          "vue",
+          "vue-router",
+          "leaflet",
+          "pinia",
+          "element-plus",
+          "echarts/core",
+          "echarts/charts",
+          "echarts/components",
+          "echarts/renderers",
+          "@vueuse/core",
+        ],
       },
       server: { host: "127.0.0.1", port: 0 },
     });
@@ -273,6 +284,13 @@ test(
       import { useSatelliteHotspotStore } from '/src/stores/satelliteHotspot.ts';
       import { useFireRiskStore } from '/src/stores/fireRisk.ts';
       import { runRemoteSensingBrowserChecks } from '/src/views/remote-sensing/testing/browserChecks.mjs';
+      import WeatherPage from '/src/views/environment/weather/index.vue';
+      import ForecastPage from '/src/views/environment/forecast/index.vue';
+      import FactorsPage from '/src/views/environment/fire-risk-factors/index.vue';
+      import { useWeatherStore } from '/src/stores/weather.ts';
+      import { useForecastStore } from '/src/stores/forecast.ts';
+      import * as echarts from 'echarts/core';
+      import { runEnvironmentBrowserChecks } from '/src/views/environment/testing/browserChecks.mjs';
       import DashboardPage from '/src/views/dashboard/index.vue';
       import { useFireAlertStore } from '/src/stores/fireAlert.ts';
       import { runAlertBrowserChecks } from '/src/views/fire/alerts/testing/browserChecks.mjs';
@@ -287,7 +305,7 @@ test(
       // 本地透明瓦片避免外部请求；只影响本测试浏览器内的模块实例。
       baseLayers.forEach(layer => layer.url = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
       const pinia = createPinia(); const store = useUavStore(pinia);
-      const remotePages = { '/remote-sensing/data': ScenePage, '/remote-sensing/products': ProductPage, '/remote-sensing/hotspots': HotspotPage, '/remote-sensing/fire-risk': RiskPage };
+      const remotePages = { '/environment/weather': WeatherPage, '/environment/forecast': ForecastPage, '/environment/fire-risk-factors': FactorsPage, '/remote-sensing/data': ScenePage, '/remote-sensing/products': ProductPage, '/remote-sensing/hotspots': HotspotPage, '/remote-sensing/fire-risk': RiskPage };
       const router = createRouter({ history: createMemoryHistory(), routes: [ ...Object.entries(remotePages).map(([path, component]) => ({ path, component })), { path: '/dashboard', component: ForestFireMap }, { path: '/uav/list', component: UavPage }, { path: '/fire/events', component: FirePage }, { path: '/fire/alerts', component: AlertPage } ] });
       await router.push('/dashboard');
       const active = ref(true); const view = ref('/dashboard');
@@ -305,6 +323,7 @@ test(
       }
       if (!result.error) { const alerts = await runAlertBrowserChecks({ store: useFireAlertStore(pinia), events: useFireEventStore(pinia), router, nextTick }); result.passed.push(...alerts.passed); result.error = alerts.error; }
       if (!result.error) { const remote = await runRemoteSensingBrowserChecks({ catalog: useRemoteSensingStore(pinia), hot: useSatelliteHotspotStore(pinia), risk: useFireRiskStore(pinia), alerts: useFireAlertStore(pinia), events: useFireEventStore(pinia), router, nextTick }); result.passed.push(...remote.passed); result.error = remote.error; }
+      if (!result.error) { const environment = await runEnvironmentBrowserChecks({ weather: useWeatherStore(pinia), forecast: useForecastStore(pinia), risk: useFireRiskStore(pinia), remote: useRemoteSensingStore(pinia), router, nextTick, echarts }); result.passed.push(...environment.passed); result.error = environment.error; }
       const output = document.createElement('pre'); output.id = 'gis-test-result'; output.textContent = JSON.stringify(result); document.body.append(output);
       </script></body></html>`;
         res.setHeader("Content-Type", "text/html");
@@ -348,7 +367,7 @@ test(
       assert.ok(match, "浏览器未输出测试结果，请检查浏览器/Vite 运行环境");
       const result = JSON.parse(match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
       assert.equal(result.error, undefined, JSON.stringify(result));
-      assert.equal(result.passed.length, 35);
+      assert.equal(result.passed.length, 40);
     } finally {
       child?.kill();
       await server.close();

@@ -12,6 +12,7 @@
       </div>
     </header>
     <DashboardStats :items="stats" />
+    <DashboardRiskSummary />
     <div class="command-center__main">
       <ForestFireMap />
       <DashboardAlerts />
@@ -21,6 +22,7 @@
 
 <script setup lang="ts">
 import DashboardStats from "./components/DashboardStats.vue";
+import DashboardRiskSummary from "./components/DashboardRiskSummary.vue";
 import ForestFireMap from "./components/map/ForestFireMap.vue";
 import DashboardAlerts from "./components/DashboardAlerts.vue";
 import { dashboardSnapshot, dashboardStats } from "./mock";

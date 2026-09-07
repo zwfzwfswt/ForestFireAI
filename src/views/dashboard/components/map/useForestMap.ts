@@ -13,6 +13,7 @@ import { useAlertMapLayer } from "./composables/useAlertMapLayer";
 import { useFireMapLayer } from "./composables/useFireMapLayer";
 import type { GeoPoint } from "./utils/geometry";
 import { useRemoteSensingLayers } from "./composables/useRemoteSensingLayers";
+import { useWeatherMapLayer } from "./composables/useWeatherMapLayer";
 
 export function useForestMap(
   container: Ref<HTMLElement | null>,
@@ -30,6 +31,7 @@ export function useForestMap(
   const fire = useFireMapLayer(() => drawing.mode.value !== null);
   const alerts = useAlertMapLayer(() => drawing.mode.value !== null);
   const remote = useRemoteSensingLayers(() => drawing.mode.value !== null);
+  const weather = useWeatherMapLayer(() => drawing.mode.value !== null);
   let layers: MapLayerRegistry | undefined;
   let center = mapConfig.center;
   let map: Map | undefined;
@@ -43,6 +45,7 @@ export function useForestMap(
     frame = requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
   }
   function dispose() {
+    weather.detach();
     remote.detach();
     alerts.detach();
     fire.detach();
@@ -92,6 +95,7 @@ export function useForestMap(
           RemoteSensingLayer: remote.factory(L, "RemoteSensingLayer"),
           FireRiskLayer: remote.factory(L, "FireRiskLayer"),
           SatelliteHotspotLayer: remote.factory(L, "SatelliteHotspotLayer"),
+          WeatherStationLayer: weather.factory(L),
         });
         drawing.attach(map, L, layers);
         L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "缩小" }).addTo(map);
@@ -133,6 +137,7 @@ export function useForestMap(
         fire.attach(map, L, layers);
         alerts.attach(map, L, layers);
         remote.attach(map, L, layers);
+        weather.attach(map, L, layers);
         resize();
         return map;
       } catch (cause) {

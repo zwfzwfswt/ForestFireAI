@@ -10,6 +10,8 @@ import { useFireAlertStore } from "./fireAlert";
 import { useRemoteSensingStore } from "./remoteSensing";
 import { useSatelliteHotspotStore } from "./satelliteHotspot";
 import { useFireRiskStore } from "./fireRisk";
+import { useWeatherStore } from "./weather";
+import { useForecastStore } from "./forecast";
 
 /**
  * 租户 Store
@@ -119,6 +121,8 @@ export const useTenantStore = defineStore("tenant", () => {
     if (currentTenantId.value !== tenant.id) useFireAlertStore(store).reset();
     if (currentTenantId.value !== tenant.id) useRemoteSensingStore(store).reset();
     if (currentTenantId.value !== tenant.id) useSatelliteHotspotStore(store).reset();
+    if (currentTenantId.value !== tenant.id) useWeatherStore(store).reset();
+    if (currentTenantId.value !== tenant.id) useForecastStore(store).reset();
     if (currentTenantId.value !== tenant.id) useFireRiskStore(store).reset();
     currentTenantId.value = tenant.id;
     currentTenant.value = tenant;
@@ -166,6 +170,8 @@ export const useTenantStore = defineStore("tenant", () => {
     useFireAlertStore(store).reset();
     useRemoteSensingStore(store).reset();
     useSatelliteHotspotStore(store).reset();
+    useWeatherStore(store).reset();
+    useForecastStore(store).reset();
     useFireRiskStore(store).reset();
     currentTenantId.value = null;
     currentTenant.value = null;

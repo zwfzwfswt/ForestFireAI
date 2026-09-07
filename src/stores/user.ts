@@ -16,6 +16,8 @@ import { useFireAlertStore } from "./fireAlert";
 import { useRemoteSensingStore } from "./remoteSensing";
 import { useSatelliteHotspotStore } from "./satelliteHotspot";
 import { useFireRiskStore } from "./fireRisk";
+import { useWeatherStore } from "./weather";
+import { useForecastStore } from "./forecast";
 
 export const useUserStore = defineStore("user", () => {
   // 用户信息
@@ -106,6 +108,8 @@ export const useUserStore = defineStore("user", () => {
     useFireAlertStore(store).reset();
     useRemoteSensingStore(store).reset();
     useSatelliteHotspotStore(store).reset();
+    useWeatherStore(store).reset();
+    useForecastStore(store).reset();
     useFireRiskStore(store).reset();
     AuthStorage.clearAuth();
     userInfo.value = {} as UserInfo;

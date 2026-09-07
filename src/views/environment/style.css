@@ -1,0 +1,21 @@
+.environment-page {
+  height: auto;
+  min-height: 100%;
+}
+.environment-page h1 {
+  margin: 0;
+  font-size: 22px;
+}
+.environment-page header p {
+  color: var(--el-text-color-secondary);
+}
+.environment-page .el-select {
+  width: 180px;
+}
+.environment-page .environment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+}

@@ -1,5 +1,6 @@
 import type { FireRiskZone, SatelliteHotspot } from "./types";
-import { confidenceText, optionalValue, riskLevels, factorLabels } from "./config";
+import { confidenceText, optionalValue, riskLevels } from "./config";
+import { rankedFactors, localTime, weatherValue } from "../environment/model";
 import { escapeHtml } from "./model";
 export function hotspotPopup(h: SatelliteHotspot) {
   return [
@@ -18,14 +19,17 @@ export function hotspotPopup(h: SatelliteHotspot) {
 export function riskPopup(z: FireRiskZone) {
   return [
     z.name,
-    "MOCK / DEMO · 风险因素未实际计算",
+    "MOCK / DEMO · 加权演示模型，非行业标准",
     `等级：${riskLevels[z.level].label}`,
-    `分数：${z.score}/100`,
-    `更新：${z.generatedAt}`,
-    ...Object.entries(z.factors)
-      .sort((a, b) => b[1] - a[1])
+    `综合评分：${z.score}/100`,
+    `更新：${localTime(z.generatedAt)}`,
+    ...(z.assessmentError ? [`评估异常：${z.assessmentError}`] : []),
+    "主要因素（按加权贡献排名）：",
+    ...rankedFactors(z.factors)
       .slice(0, 3)
-      .map(([key, value]) => `${factorLabels[key as keyof FireRiskZone["factors"]]}：${value}/100`),
+      .map(
+        (f) => `${f.label}：${weatherValue(f.score)}/100 · 贡献 ${weatherValue(f.contribution)} 分`
+      ),
   ]
     .map(escapeHtml)
     .join("<br>");

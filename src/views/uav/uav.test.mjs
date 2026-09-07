@@ -331,7 +331,7 @@ test("本地菜单沿用 RouteItem，重复生成无重复项，冲突时保留�
   const permission = readFileSync(resolve(root, "../../stores/permission.ts"), "utf8");
   assert.match(
     permission,
-    /transformRoutes\(\s*withRemoteSensingMockMenu\(withFireMockMenu\(withUavMockMenu\(routeData\)\)\)/
+    /withRemoteSensingMockMenu\(withFireMockMenu\(withUavMockMenu\(routeData\)\)\)/
   );
   for (const file of ["user", "tenant"])
     assert.match(

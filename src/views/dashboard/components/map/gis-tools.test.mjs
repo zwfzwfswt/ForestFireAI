@@ -63,7 +63,7 @@ test("六类十九个图层元数据注册，六组 Mock 共七个 GeoJSON 要�
     layerCategories.map((c) => c.name),
     ["基础地理", "森林资源", "火灾监测", "无人机", "火险信息", "应急资源"]
   );
-  assert.equal(business.states.value.length, 21);
+  assert.equal(business.states.value.length, 23);
   assert.equal(registry.list().filter((layer) => layer.status === "ready").length, 6);
   assert.equal(
     registry.list().reduce((sum, layer) => sum + layer.featureCount, 0),
@@ -552,7 +552,7 @@ test("Vue KeepAlive 停用销毁、激活重建 GIS；默认视角读取 mapConf
     assert.equal(restored.find((s) => s.id === "RoadLayer").opacity, 0.4);
     assert.equal(restored.find((s) => s.id === "WaterSourceLayer").zIndex, 570);
     assert.equal(maps[1].getPane("ff-business-RoadLayer").style.opacity, "0.4");
-    assert.equal(restored.filter((s) => s.status === "ready").length, 10);
+    assert.equal(restored.filter((s) => s.status === "ready").length, 11);
     state.drawing.select("point");
     maps[1].fire("click", { latlng: { lat: 31, lng: 120 } });
     assert.equal(state.drawing.count.value, 1);

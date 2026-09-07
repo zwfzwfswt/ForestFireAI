@@ -1,12 +1,13 @@
 import { mapConfig } from "../dashboard/components/map/mapConfig";
 import { productConfig } from "./config";
+import { createMockFactors } from "../environment/mock";
+import { assessRisk } from "../environment/model";
 import type {
   RemoteSensingScene,
   RemoteSensingProduct,
   SatelliteHotspot,
   FireRiskZone,
   Satellite,
-  RiskLevel,
   ProductType,
   ProductStatus,
 } from "./types";
@@ -93,12 +94,13 @@ export function createMockHotspots(): SatelliteHotspot[] {
 }
 export function createMockRiskZones(): FireRiskZone[] {
   return Array.from({ length: 8 }, (_, i) => {
+    const factors = createMockFactors(i, time(i));
     const x = mapConfig.center[1] - 0.25 + (i % 4) * 0.13,
       y = mapConfig.center[0] - 0.18 + Math.floor(i / 4) * 0.2;
     return {
       id: `risk-${i + 1}`,
       name: `MOCK 火险分区 ${i + 1}`,
-      level: (["low", "moderate", "high", "very_high", "extreme"] as RiskLevel[])[i % 5],
+      ...assessRisk(factors),
       geometry: {
         type: "Polygon",
         coordinates: [
@@ -111,17 +113,9 @@ export function createMockRiskZones(): FireRiskZone[] {
           ],
         ],
       },
-      score: 12 + (i % 5) * 20,
       generatedAt: time(i),
-      source: "MOCK 示意评估（未计算）",
-      factors: {
-        vegetation: 52 + i,
-        moisture: 71 + i,
-        temperature: 61 + i,
-        weather: 68 + i,
-        terrain: 35 + i,
-        history: 40 + i,
-      },
+      source: "MOCK 加权模型 V1（非行业标准）",
+      factors,
     };
   });
 }

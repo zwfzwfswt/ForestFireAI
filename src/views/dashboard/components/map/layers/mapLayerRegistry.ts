@@ -14,6 +14,8 @@ export type MapLayerId =
   | "FireAlertLayer"
   | "RemoteSensingLayer"
   | "SatelliteHotspotLayer"
+  | "WeatherStationLayer"
+  | "WindLayer"
   | "FireRiskLayer"
   | "ResourceLayer";
 

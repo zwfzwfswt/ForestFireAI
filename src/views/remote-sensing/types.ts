@@ -1,4 +1,5 @@
 import type { GeoJSONOptions } from "leaflet";
+import type { FireRiskFactors } from "../environment/types";
 type Geometry = Parameters<NonNullable<GeoJSONOptions["filter"]>>[0]["geometry"];
 type Polygon = Extract<Geometry, { type: "Polygon" }>;
 
@@ -73,10 +74,8 @@ export interface FireRiskZone {
   score: number;
   generatedAt: string;
   source: string;
-  factors: Record<
-    "vegetation" | "moisture" | "temperature" | "weather" | "terrain" | "history",
-    number
-  >;
+  factors: FireRiskFactors;
+  assessmentError?: string;
 }
 export interface CatalogQuery {
   keyword: string;

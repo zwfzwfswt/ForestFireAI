@@ -4,7 +4,7 @@
       <h1>火险分区</h1>
       <p>
         MOCK / DEMO · 高风险 {{ store.highRiskCount }} 处 ·
-        分数和风险因素均为虚构样例，未运行评估模型。
+        使用加权演示模型，非行业标准；风险因子仍为 Mock。
       </p>
     </header>
     <ElCard shadow="never">
@@ -53,7 +53,12 @@
       title="火险分区详情"
       :rows="rows"
       :legend="productConfig.fire_risk.legend"
-    />
+    >
+      <p v-if="store.selectedRiskZone?.assessmentError" role="alert">
+        {{ store.selectedRiskZone.assessmentError }}
+      </p>
+      <FactorBreakdown v-if="store.selectedRiskZone" :factors="store.selectedRiskZone.factors" />
+    </RemoteDetail>
   </div>
 </template>
 <script setup lang="ts">
@@ -72,8 +77,9 @@ import {
 } from "element-plus";
 import "../styles";
 import { useFireRiskStore } from "../../../stores/fireRisk";
-import { riskLevels, factorLabels, productConfig } from "../config";
-import type { FireRiskZone, RiskLevel } from "../types";
+import { riskLevels, productConfig } from "../config";
+import type { RiskLevel } from "../types";
+import FactorBreakdown from "../../environment/components/FactorBreakdown.vue";
 import { fireTime } from "../../fire/config";
 import ProductLegend from "../components/ProductLegend.vue";
 import RemoteDetail from "../components/RemoteDetail.vue";
@@ -100,10 +106,6 @@ const rows = computed(() => {
         { label: "风险分数", value: `${z.score}/100` },
         { label: "更新时间", value: fireTime(z.generatedAt) },
         { label: "来源", value: z.source },
-        ...Object.entries(z.factors).map(([key, value]) => ({
-          label: `${factorLabels[key as keyof FireRiskZone["factors"]]}因素（Mock）`,
-          value: `${value}/100`,
-        })),
       ]
     : [];
 });

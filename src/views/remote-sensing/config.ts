@@ -1,11 +1,4 @@
-import type {
-  FireRiskZone,
-  Legend,
-  ProductType,
-  RiskLevel,
-  Satellite,
-  ProductStatus,
-} from "./types";
+import type { Legend, ProductType, RiskLevel, Satellite, ProductStatus } from "./types";
 export const satelliteLabels: Record<Satellite, string> = {
   sentinel2: "Sentinel-2",
   landsat: "Landsat",
@@ -27,14 +20,7 @@ export const riskLevels: Record<RiskLevel, { label: string; color: string }> = {
   very_high: { label: "4 Very High / 很高", color: "#e85b25" },
   extreme: { label: "5 Extreme / 极高", color: "#b51f32" },
 };
-export const factorLabels: Record<keyof FireRiskZone["factors"], string> = {
-  vegetation: "植被",
-  moisture: "水分",
-  temperature: "温度",
-  weather: "天气",
-  terrain: "地形",
-  history: "历史",
-};
+export { factorLabels } from "../environment/config";
 const gradient = (label: string, low: string, high: string, colors: string[]): Legend => ({
   label,
   stops: colors.map((color, i) => ({
